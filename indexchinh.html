@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAIMAI ENGLISH - Dictation App v1.5.1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { 
+            --primary: #6c5ce7; --accent-yellow: #ffde59; --light-yellow: #fff9e6; 
+            --text-dark: #2d3436; --success: #00b894; --danger: #ff7675; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1973&auto=format&fit=crop'); 
+            background-size: cover; background-attachment: fixed; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; 
+        }
+
+        /* --- SIDE IMAGES (GIỮ NGUYÊN) --- */
+        .side-images { position: fixed; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 15px; z-index: 1; pointer-events: none; }
+        .side-images img { pointer-events: auto; width: 300px; height: 200px; object-fit: cover; border-radius: 15px; border: 3px solid var(--accent-yellow); box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: 0.4s; }
+        .left-side { left: calc((100vw - 850px) / 4); transform: translate(-50%, -50%); }
+        .right-side { right: calc((100vw - 850px) / 4); transform: translate(50%, -50%); }
+
+        /* --- MENU (HOVER) --- */
+        .menu-container { position: absolute; top: 20px; right: 20px; z-index: 1000; padding-bottom: 20px; }
+        .menu-icon { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 50px; background: white; min-width: 240px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1px solid #eee; animation: fadeIn 0.3s ease; }
+        .dropdown-menu div { padding: 15px 20px; font-size: 14px; border-bottom: 1px solid #f5f5f5; color: var(--text-dark); cursor: pointer; text-align: left; transition: 0.2s; }
+        .dropdown-menu div:hover { background: #f8f9fa; padding-left: 25px; color: var(--primary); }
+        .dropdown-menu .menu-header { background: var(--light-yellow); font-weight: bold; color: var(--primary); cursor: default; }
+        .menu-container:hover .dropdown-menu { display: block; }
+        .menu-container:hover .menu-icon { transform: scale(1.1); background: #5649c1; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background: var(--light-yellow); margin: 10% auto; padding: 35px; border-radius: 30px; width: 90%; max-width: 400px; border: 3px solid var(--accent-yellow); box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
+
+        .container { width: 95%; max-width: 850px; background-color: var(--light-yellow); padding: 40px; border-radius: 35px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); border: 2px solid var(--accent-yellow); position: relative; z-index: 10; text-align: center; }
+        input, select, textarea { width: 100% !important; padding: 14px; margin-bottom: 15px; border: 1px solid #e0d0a0; border-radius: 12px; background: white; font-size: 16px; box-sizing: border-box; }
+        
+        .btn-main { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; margin-bottom: 10px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
+        .btn-main:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(108, 92, 231, 0.5); filter: brightness(1.1); }
+        .btn-main.active { background: #5649c1; transform: translateY(2px); }
+
+        .speed-btn { background: white; border: 2px solid #e0d0a0; padding: 8px 18px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; color: var(--text-dark); }
+        .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* --- HIỂN THỊ DỮ LIỆU (FIX ENTER XUỐNG HÀNG) --- */
+        #exercise-area, #quiz-area, .info-panel { 
+            line-height: 1.8; font-size: 20px; padding: 30px; background: white; border-radius: 15px; 
+            border: 1px solid #e0d0a0; text-align: left; margin: 20px 0; min-height: 100px;
+            white-space: pre-wrap; word-wrap: break-word;
+        }
+        .blank-wrapper { display: inline-block; vertical-align: middle; margin: 0 8px; text-align: center; position: relative; line-height: 1.2; }
+        .blank-input { width: auto; background: #fff; border: 2px solid var(--accent-yellow); border-radius: 8px; padding: 4px 8px; font-weight: bold; color: var(--primary); text-align: center; font-size: 18px; outline: none; transition: 0.3s; }
+        .correct-hint { font-size: 13px; color: #27ae60; font-weight: bold; display: block; margin-top: 2px; height: 15px; }
+
+        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .option-btn { background: white; border: 2px solid #e0d0a0; padding: 15px; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; text-align: left; white-space: pre-wrap; }
+        .option-btn:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .option-btn.selected { background: var(--primary); color: white; }
+        .option-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
+        .option-btn.wrong { background: var(--danger) !important; color: white !important; border-color: var(--danger) !important; }
+
+        .quiz-img-container { margin: 15px 0; display: none; text-align: center; }
+        .quiz-img-container img { max-width: 100%; border-radius: 15px; border: 3px solid var(--accent-yellow); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; font-size: 14px; }
+        .user-table th, .user-table td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        .user-table th { background: var(--primary); color: white; }
+
+        .admin-list-btn { border: none; padding: 5px 12px; border-radius: 10px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 1550px) { .side-images { display: none; } }
+        @media (max-width: 600px) { .quiz-options { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="side-images left-side">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh9.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh8.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2F%E1%BA%A3nh2.jpg?alt=media">
+    </div>
+    <div class="side-images right-side">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh7.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh3.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh1.jpg?alt=media">
+    </div>
+
+    <div class="menu-container" id="main-menu-div">
+        <button class="menu-icon" id="menu-trigger">☰</button>
+        <div class="dropdown-menu" id="myDropdown">
+            <div class="menu-header" id="menu-email-display">Học viên</div>
+            <div onclick="openChangePass()">🔑 Đổi mật khẩu</div>
+            <div id="menu-date-display">📅 Khai giảng: ---</div>
+            <div onclick="logout()" style="color:var(--danger); font-weight:bold;">🚪 Đăng xuất</div>
+        </div>
+    </div>
+
+    <div id="reg-modal" class="modal"><div class="modal-content"><h3>Đăng Ký</h3><input type="email" id="reg-email" placeholder="Email"><input type="password" id="reg-password" placeholder="Mật khẩu"><button id="confirm-reg-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeReg()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
+    <div id="forgot-modal" class="modal"><div class="modal-content"><h3>Quên Mật Khẩu</h3><input type="email" id="forgot-email" placeholder="Email khôi phục"><button id="confirm-forgot-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeForgot()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
+    <div id="pass-modal" class="modal"><div class="modal-content"><h3>Đổi Mật Khẩu</h3><input type="password" id="new-password" placeholder="Mật khẩu mới"><button id="confirm-pass-btn" class="btn-main">Cập Nhật</button><button onclick="closePass()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Đóng</button></div></div>
+
+    <div class="container">
+        <header><img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2FLogo.jpg?alt=media" alt="Logo" style="height: 110px; border-radius: 50%; border: 4px solid var(--accent-yellow); margin-bottom: 10px;"><h1>HAIMAI ENGLISH</h1></header>
+
+        <div id="auth-screen">
+            <input type="email" id="email" placeholder="Email"><input type="password" id="password" placeholder="Mật khẩu">
+            <div style="display:flex; gap:10px;"><button id="login-btn" class="btn-main" style="flex:1;">Đăng Nhập</button><button onclick="openReg()" class="btn-main" style="flex:1; background:white; color:var(--primary); border:2px solid var(--primary);">Đăng Ký</button></div>
+            <a onclick="openForgot()" style="color:#666; text-decoration:underline; cursor:pointer; font-size:14px;">Quên mật khẩu?</a>
+        </div>
+
+        <div id="main-app" style="display:none;">
+            <div class="tab-nav" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px; flex-wrap: wrap;">
+                <button class="btn-main active" style="width:auto; padding:10px 15px;" id="tab-study-btn" onclick="showTab(event, 'study')">Điền Từ</button>
+                <button class="btn-main" style="width:auto; padding:10px 15px;" id="tab-quiz-btn" onclick="showTab(event, 'quiz-tab')">Nghe Chọn Đáp Án</button>
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'admin-lessons')">Quản Lý</button>
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-manage')">Phê Duyệt</button>
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-list')">Học Viên</button>
+            </div>
+
+            <div id="study" class="tab-content">
+                <audio id="player" controls src=""></audio>
+                <div class="speed-controls">
+                    <button class="speed-btn" onclick="changeSpeed(0.75, 'player', this)">0.75x</button><button class="speed-btn active" onclick="changeSpeed(1, 'player', this)">1.0x</button><button class="speed-btn" onclick="changeSpeed(1.25, 'player', this)">1.25x</button><button class="speed-btn" onclick="changeSpeed(1.5, 'player', this)">1.5x</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:15px;"><select id="level-filter" onchange="filterLessonsByLevel()"><option value="">Cấp độ</option><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><select id="lesson-select" onchange="loadLesson(this.value)"><option value="">Chọn bài</option></select></div>
+                <div id="exercise-area">Hãy chọn bài học...</div>
+                <div id="score-display" style="font-weight:bold; font-size:20px; display:none; margin:15px 0;"></div>
+                <button class="btn-main" onclick="checkResults('exercise-area', 'score-display')">Kiểm Tra Đáp Án</button>
+                <button class="btn-main" style="background:#a29bfe;" onclick="toggleInfo('translate-panel')">Dịch Nội Dung</button>
+                <div id="translate-panel" class="info-panel"></div>
+                <button class="btn-main" style="background:#a29bfe;" onclick="toggleInfo('vocab-panel')">Từ Vựng</button>
+                <div id="vocab-panel" class="info-panel"></div>
+            </div>
+
+            <div id="quiz-tab" class="tab-content" style="display:none;">
+                <audio id="player-quiz" controls src=""></audio>
+                <div class="speed-controls">
+                    <button class="speed-btn" onclick="changeSpeed(0.75, 'player-quiz', this)">0.75x</button><button class="speed-btn active" onclick="changeSpeed(1, 'player-quiz', this)">1.0x</button><button class="speed-btn" onclick="changeSpeed(1.25, 'player-quiz', this)">1.25x</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:15px;"><select id="part-filter" onchange="filterQuizByPart()"><option value="">Chọn Part</option><option value="Part1">Part 1</option><option value="Part2">Part 2</option><option value="Part3">Part 3</option><option value="Part4">Part 4</option></select><select id="quiz-select" onchange="loadQuiz(this.value)"><option value="">Chọn câu hỏi</option></select></div>
+                <div id="quiz-image-container" class="quiz-img-container"><img id="quiz-image-display" src=""></div>
+                <div id="quiz-area">Hãy chọn câu hỏi...</div>
+                <div id="quiz-options-container" class="quiz-options"></div>
+                <div id="quiz-score-display" style="font-weight:bold; font-size:20px; margin-top:15px; display:none;"></div>
+                <button class="btn-main" id="quiz-check-btn" style="display:none; margin-top:20px;" onclick="checkResults('quiz-area', 'quiz-score-display', true)">Kiểm Tra Điền Từ</button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-main" style="background:#a29bfe; flex:1;" onclick="toggleInfo('quiz-translate-panel')">Dịch Nội Dung</button>
+                    <button class="btn-main" style="background:#a29bfe; flex:1;" onclick="toggleInfo('quiz-vocab-panel')">Từ Vựng</button>
+                </div>
+                <div id="quiz-translate-panel" class="info-panel"></div>
+                <div id="quiz-vocab-panel" class="info-panel"></div>
+            </div>
+
+            <div id="admin-lessons" class="tab-content" style="display:none; text-align: left;">
+                <select id="admin-type" onchange="toggleAdminForm()"><option value="dictation">Dạng Điền Từ</option><option value="quiz">Dạng Trắc Nghiệm</option></select>
+                <input type="text" id="admin-title" placeholder="Tiêu đề bài học">
+                <div id="dictation-fields"><select id="admin-level"><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><textarea id="admin-script" rows="4" placeholder="Kịch bản [từ điền]"></textarea></div>
+                <div id="quiz-fields" style="display:none;">
+                    <select id="admin-part"><option value="Part1">Part 1 (4 câu + Ảnh)</option><option value="Part2">Part 2 (3 câu)</option><option value="Part3">Part 3 (4 câu)</option><option value="Part4">Part 4 (4 câu)</option></select>
+                    <label>Ảnh Part 1:</label><input type="file" id="admin-quiz-img" accept="image/*">
+                    <textarea id="admin-question" rows="2" placeholder="Đề bài (Dùng [])"></textarea>
+                    <input type="text" id="admin-opt-a" placeholder="A (Dùng [])"><input type="text" id="admin-opt-b" placeholder="B"><input type="text" id="admin-opt-c" placeholder="C"><input type="text" id="admin-opt-d" placeholder="D"><select id="admin-correct-opt"><option value="A">Đúng A</option><option value="B">Đúng B</option><option value="C">Đúng C</option><option value="D">Đúng D</option></select>
+                </div>
+                <label>Audio:</label><input type="file" id="admin-audio" accept="audio/*">
+                <textarea id="admin-translate" rows="2" placeholder="Bản dịch"></textarea><textarea id="admin-vocab" rows="2" placeholder="Từ vựng"></textarea>
+                <button id="upload-btn" class="btn-main" style="background: var(--success);">Lưu Lên Hệ Thống</button>
+                <div id="admin-lesson-list"></div>
+            </div>
+            
+            <div id="user-manage" class="tab-content" style="display:none;"><div id="pending-users-list"></div></div>
+            <div id="user-list" class="tab-content" style="display:none;"><table class="user-table"><thead><tr><th>STT</th><th>Email</th><th>Ngày Khai Giảng</th><th>Hết Hạn</th><th>Trạng thái</th></tr></thead><tbody id="full-user-rows"></tbody></table></div>
+        </div>
+
+        <footer style="margin-top:40px; border-top: 1px solid #ddd; padding-top:20px;">
+            <p style="font-weight: bold; font-size: 17px; color: var(--primary);">📍 HAIMAI ENGLISH - Dictation App</p>
+            <p><i class="fa-solid fa-phone"></i> Hotline: 0905.282.225</p>
+            <div class="footer-social"><a href="https://www.facebook.com/HaiMaisEnglish" target="_blank"><i class="fa-brands fa-facebook"></i></a><a href="https://zalo.me/0399535553" target="_blank" class="zalo-btn"><i class="fa-solid fa-comment-sms"></i> Tư vấn học tập</a></div>
+            <div style="font-size: 13px; color: #555; margin-top:10px;"><p>🏠 CS1: 163 Nguyễn Công Trứ | CS2: 50 Trà Khê 6, Đà Nẵng</p></div>
+        </footer>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
+    const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const storage = getStorage(app);
+    const ADMIN_EMAIL = "hmenglishdn@gmail.com";
+    setPersistence(auth, browserSessionPersistence);
+
+    let allLessons = []; let currentEditId = null;
+
+    // --- AUTH LOGIC ---
+    document.getElementById('login-btn').onclick = async () => {
+        const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
+        try { await signInWithEmailAndPassword(auth, e, p); } catch(err) { alert("Sai thông tin đăng nhập!"); }
+    };
+    window.logout = () => signOut(auth);
+    window.openReg = () => document.getElementById('reg-modal').style.display = 'block';
+    window.closeReg = () => document.getElementById('reg-modal').style.display = 'none';
+    window.openForgot = () => document.getElementById('forgot-modal').style.display = 'block';
+    window.closeForgot = () => document.getElementById('forgot-modal').style.display = 'none';
+    window.openChangePass = () => { document.getElementById('pass-modal').style.display = 'block'; document.getElementById("myDropdown").style.display = "none"; };
+    window.closePass = () => document.getElementById('pass-modal').style.display = 'none';
+
+    document.getElementById('confirm-pass-btn').onclick = async () => {
+        try { await updatePassword(auth.currentUser, document.getElementById('new-password').value); alert("Xong!"); closePass(); showTab(null, 'study'); } catch(e) { alert("Vui lòng đăng nhập lại!"); }
+    };
+    document.getElementById('confirm-reg-btn').onclick = async () => {
+        const e = document.getElementById('reg-email').value, p = document.getElementById('reg-password').value;
+        try { const uc = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "users", uc.user.uid), { email: e, role: "student", status: "pending", createdAt: new Date().getTime(), startDate: null }); alert("Chờ duyệt!"); await signOut(auth); closeReg(); } catch(err) { alert(err.message); }
+    };
+    document.getElementById('confirm-forgot-btn').onclick = async () => {
+        try { await sendPasswordResetEmail(auth, document.getElementById('forgot-email').value); alert("Link đã gửi vào Email!"); closeForgot(); } catch(err) { alert(err.message); }
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const snap = await getDoc(doc(db, "users", user.uid));
+            if (!snap.exists()) return;
+            const uData = snap.data();
+            if (uData.status === "pending") return signOut(auth);
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('menu-trigger').style.display = 'flex';
+            document.getElementById('menu-email-display').innerText = uData.email;
+            document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
+            if (user.email === ADMIN_EMAIL) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+            fetchLessons();
+            if (user.email === ADMIN_EMAIL) fetchAdminData();
+        } else {
+            document.getElementById('auth-screen').style.display = 'block'; document.getElementById('main-app').style.display = 'none';
+            document.getElementById('menu-trigger').style.display = 'none';
+        }
+    });
+
+    async function fetchLessons() {
+        const snap = await getDocs(query(collection(db, "lessons"), orderBy("createdAt", "desc")));
+        allLessons = []; snap.forEach(d => allLessons.push({ ...d.data(), id: d.id }));
+        filterLessonsByLevel(); filterQuizByPart();
+        if (auth.currentUser?.email === ADMIN_EMAIL) fetchAdminLessons();
+    }
+
+    const parseTextWithBlanks = (text) => (text || "").replace(/\[(.*?)\]/g, (m, w) => `<span class="blank-wrapper"><input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}"><span class="correct-hint"></span></span>`);
+
+    // --- TAB 1 ---
+    window.loadLesson = (id) => {
+        const d = allLessons.find(l => l.id === id); if(!d) return;
+        document.getElementById('translate-panel').style.display = 'none'; document.getElementById('vocab-panel').style.display = 'none';
+        const p = document.getElementById('player'); p.src = d.audioUrl; p.play();
+        document.getElementById('exercise-area').innerHTML = parseTextWithBlanks(d.script);
+        document.getElementById('translate-panel').innerText = d.translation || "---";
+        document.getElementById('vocab-panel').innerText = d.vocabulary || "---";
+        document.getElementById('score-display').style.display = 'none';
+    };
+
+    // --- TAB 2 ---
+    window.loadQuiz = (id) => {
+        const d = allLessons.find(l => l.id === id); if(!d) return;
+        const p = document.getElementById('player-quiz'); p.src = d.audioUrl; p.play();
+        const imgCont = document.getElementById('quiz-image-container'), imgDisp = document.getElementById('quiz-image-display');
+        if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } else { imgCont.style.display = 'none'; }
+        document.getElementById('quiz-area').innerHTML = parseTextWithBlanks(d.question);
+        document.getElementById('quiz-translate-panel').style.display = 'none';
+        document.getElementById('quiz-vocab-panel').style.display = 'none';
+        document.getElementById('quiz-translate-panel').innerText = d.translation || "Chưa có bản dịch";
+        document.getElementById('quiz-vocab-panel').innerText = d.vocabulary || "Chưa có từ vựng";
+        const container = document.getElementById('quiz-options-container'); container.innerHTML = "";
+        const opts = (d.part === 'Part2') ? ['A','B','C'] : ['A','B','C','D'];
+        opts.forEach(o => {
+            if(d['opt'+o]) {
+                const btn = document.createElement('button'); btn.className = 'option-btn';
+                btn.innerHTML = `${o}. ${parseTextWithBlanks(d['opt'+o])}`;
+                btn.onclick = (e) => {
+                    if(e.target.tagName === 'INPUT') return;
+                    document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    if(o === d.correct) btn.classList.add('correct'); else { btn.classList.add('wrong'); document.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(d.correct)) b.classList.add('correct'); }); }
+                };
+                container.appendChild(btn);
+            }
+        });
+        const hasBlanks = d.question.includes('[') || (d.optA && d.optA.includes('['));
+        document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
+        document.getElementById('quiz-score-display').style.display = 'none';
+    };
+
+    window.checkResults = (areaId, scoreId, isQuiz = false) => {
+        const area = document.getElementById(areaId);
+        const optCont = isQuiz ? document.getElementById('quiz-options-container') : null;
+        let inputs = Array.from(area.querySelectorAll('.blank-input'));
+        if (optCont) inputs = inputs.concat(Array.from(optCont.querySelectorAll('.blank-input')));
+        let correct = 0;
+        inputs.forEach(i => {
+            const hint = i.parentNode.querySelector('.correct-hint');
+            if(i.value.trim().toLowerCase() === i.getAttribute('data-ans').toLowerCase()) { i.style.borderColor = "var(--success)"; hint.innerText = ""; correct++; }
+            else { i.style.borderColor = "var(--danger)"; hint.innerText = "✓ " + i.getAttribute('data-ans'); }
+        });
+        const sd = document.getElementById(scoreId); sd.style.display = 'block'; sd.innerText = `Kết quả: Đúng ${correct}/${inputs.length}`;
+        sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    // --- ADMIN ---
+    window.toggleAdminForm = () => {
+        const t = document.getElementById('admin-type').value;
+        document.getElementById('dictation-fields').style.display = t==='dictation'?'block':'none';
+        document.getElementById('quiz-fields').style.display = t==='quiz'?'block':'none';
+    };
+
+    document.getElementById('upload-btn').onclick = async () => {
+        const type = document.getElementById('admin-type').value, title = document.getElementById('admin-title').value;
+        const file = document.getElementById('admin-audio').files[0], imgFile = document.getElementById('admin-quiz-img').files[0];
+        if(!title) return alert("Thiếu tiêu đề!");
+        try {
+            document.getElementById('upload-btn').innerText = "⏳...";
+            let url = currentEditId ? allLessons.find(l => l.id === currentEditId).audioUrl : "";
+            if(file) { const sRef = ref(storage, `audios/${Date.now()}_${file.name}`); await uploadBytes(sRef, file); url = await getDownloadURL(sRef); }
+            let imgUrl = currentEditId ? (allLessons.find(l => l.id === currentEditId).quizImg || "") : "";
+            if(imgFile) { const iRef = ref(storage, `images/${Date.now()}_${imgFile.name}`); await uploadBytes(iRef, imgFile); imgUrl = await getDownloadURL(iRef); }
+            let data = { type, title, audioUrl: url, quizImg: imgUrl, createdAt: new Date().getTime(), translation: document.getElementById('admin-translate').value, vocabulary: document.getElementById('admin-vocab').value };
+            if(type === 'dictation') { data.level = document.getElementById('admin-level').value; data.script = document.getElementById('admin-script').value; }
+            else { data.part = document.getElementById('admin-part').value; data.question = document.getElementById('admin-question').value; data.optA = document.getElementById('admin-opt-a').value; data.optB = document.getElementById('admin-opt-b').value; data.optC = document.getElementById('admin-opt-c').value; data.optD = document.getElementById('admin-opt-d').value; data.correct = document.getElementById('admin-correct-opt').value; }
+            if(currentEditId) await updateDoc(doc(db, "lessons", currentEditId), data); else await addDoc(collection(db, "lessons"), data);
+            location.reload();
+        } catch(e) { alert(e.message); }
+    };
+
+    window.fetchAdminLessons = () => {
+        const div = document.getElementById('admin-lesson-list'); if(!div) return; div.innerHTML = "<h4>Danh sách bài tập</h4>";
+        allLessons.forEach(d => { div.innerHTML += `<div style="background:white; padding:12px; margin-top:8px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;"><span style="font-size:14px;">${d.type==='quiz'?`[${d.part}]`:'[Điền]'} <b>${d.title}</b></span><div><button class="admin-list-btn" onclick="editLessonById('${d.id}')" style="background:var(--primary); color:white;">Sửa</button><button class="admin-list-btn" onclick="deleteLesson('${d.id}')" style="background:var(--danger); color:white; margin-left:5px;">Xóa</button></div></div>`; });
+    };
+
+    window.editLessonById = (id) => {
+        const d = allLessons.find(l => l.id === id); if(!d) return; currentEditId = id;
+        document.getElementById('admin-type').value = d.type || 'dictation'; toggleAdminForm();
+        document.getElementById('admin-title').value = d.title; document.getElementById('admin-translate').value = d.translation || ""; document.getElementById('admin-vocab').value = d.vocabulary || "";
+        if(d.type === 'quiz') { 
+            document.getElementById('admin-part').value = d.part; document.getElementById('admin-question').value = d.question; 
+            document.getElementById('admin-opt-a').value = d.optA || ""; document.getElementById('admin-opt-b').value = d.optB || ""; 
+            document.getElementById('admin-opt-c').value = d.optC || ""; document.getElementById('admin-opt-d').value = d.optD || ""; 
+            document.getElementById('admin-correct-opt').value = d.correct || "A"; 
+        } else { 
+            document.getElementById('admin-level').value = d.level; document.getElementById('admin-script').value = d.script; 
+        }
+        document.getElementById('upload-btn').innerText = "Cập Nhật"; window.scrollTo({top: 0, behavior: 'smooth'});
+    };
+
+    window.deleteLesson = async (id) => { if(confirm("Xóa?")) { await deleteDoc(doc(db, "lessons", id)); fetchLessons(); } };
+
+    async function fetchAdminData() {
+        const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
+        const pList = document.getElementById('pending-users-list'), fRows = document.getElementById('full-user-rows');
+        pList.innerHTML = "<h4>Yêu cầu phê duyệt</h4>"; fRows.innerHTML = ""; let count = 1;
+        snap.forEach(d => {
+            const u = d.data(); if(u.email === ADMIN_EMAIL) return;
+            if(u.status === 'pending') pList.innerHTML += `<div style="background:white; padding:10px; margin-top:5px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;"><span>${u.email}</span><button class="admin-list-btn" onclick="manageU('${d.id}')" style="background:var(--success); color:white;">Duyệt</button></div>`;
+            fRows.innerHTML += `<tr><td>${count++}</td><td>${u.email}</td><td>${u.startDate ? new Date(u.startDate).toLocaleDateString('vi-VN') : '---'}</td><td>${u.expiryDate ? new Date(u.expiryDate).toLocaleDateString('vi-VN') : '---'}</td><td>${u.status === 'approved' ? 'Đang học' : 'Chờ'}</td></tr>`;
+        });
+    }
+    window.manageU = async (id) => { const now = new Date().getTime(); await updateDoc(doc(db, "users", id), { status: "approved", startDate: now, expiryDate: now + (180*24*60*60*1000) }); alert("Đã duyệt!"); fetchAdminData(); };
+
+    // --- COMMON ---
+    window.showTab = (e, id) => { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.querySelectorAll('.tab-nav .btn-main').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; if(e) e.currentTarget.classList.add('active'); else document.getElementById('tab-study-btn').classList.add('active'); };
+    window.filterLessonsByLevel = () => { const lvl = document.getElementById('level-filter').value; const sel = document.getElementById('lesson-select'); sel.innerHTML = '<option value="">Chọn bài học</option>'; allLessons.filter(l => l.type !== 'quiz' && (!lvl || l.level === lvl)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
+    window.filterQuizByPart = () => { const part = document.getElementById('part-filter').value; const sel = document.getElementById('quiz-select'); sel.innerHTML = '<option value="">Chọn câu hỏi</option>'; allLessons.filter(l => l.type === 'quiz' && (!part || l.part === part)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
+    window.toggleInfo = (id) => { const p = document.getElementById(id); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; };
+    window.changeSpeed = (s, id, b) => { document.getElementById(id).playbackRate = s; b.parentNode.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active')); b.classList.add('active'); };
+</script>
+</body>
+</html>
