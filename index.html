@@ -93,10 +93,34 @@
             z-index: 1000;    /* Đảm bảo nằm đè lên nội dung bài học khi cuộn */
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Thêm bóng đổ để nổi bật khi ghim */
         }
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            z-index: 3000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideDown 0.5s, fadeOut 0.5s 2.5s forwards;
+        }
+
+        @keyframes slideDown {
+            from { top: -50px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; visibility: hidden; }
+        }
     </style>
 </head>
 <body>
-
+    <div id="toast">✅ Đã lưu thành công!</div>
     <div class="side-images left-side">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh9.jpg?alt=media">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh8.jpg?alt=media">
@@ -402,21 +426,87 @@
     };
 
     document.getElementById('upload-btn').onclick = async () => {
-        const type = document.getElementById('admin-type').value, title = document.getElementById('admin-title').value;
-        const file = document.getElementById('admin-audio').files[0], imgFile = document.getElementById('admin-quiz-img').files[0];
-        if(!title) return alert("Thiếu tiêu đề!");
+        const type = document.getElementById('admin-type').value;
+        const title = document.getElementById('admin-title').value;
+        const file = document.getElementById('admin-audio').files[0];
+        const imgFile = document.getElementById('admin-quiz-img').files[0];
+        
+        if(!title) { alert("Thiếu tiêu đề!"); return; }
+        
         try {
-            document.getElementById('upload-btn').innerText = "⏳...";
+            const btn = document.getElementById('upload-btn');
+            btn.innerText = "⏳ Đang lưu...";
+            btn.disabled = true;
+
             let url = currentEditId ? allLessons.find(l => l.id === currentEditId).audioUrl : "";
-            if(file) { const sRef = ref(storage, `audios/${Date.now()}_${file.name}`); await uploadBytes(sRef, file); url = await getDownloadURL(sRef); }
+            if(file) { 
+                const sRef = ref(storage, `audios/${Date.now()}_${file.name}`); 
+                await uploadBytes(sRef, file); 
+                url = await getDownloadURL(sRef); 
+            }
+            
             let imgUrl = currentEditId ? (allLessons.find(l => l.id === currentEditId).quizImg || "") : "";
-            if(imgFile) { const iRef = ref(storage, `images/${Date.now()}_${imgFile.name}`); await uploadBytes(iRef, imgFile); imgUrl = await getDownloadURL(iRef); }
-            let data = { type, title, audioUrl: url, quizImg: imgUrl, createdAt: new Date().getTime(), translation: document.getElementById('admin-translate').value, vocabulary: document.getElementById('admin-vocab').value };
-            if(type === 'dictation') { data.level = document.getElementById('admin-level').value; data.script = document.getElementById('admin-script').value; }
-            else { data.part = document.getElementById('admin-part').value; data.question = document.getElementById('admin-question').value; data.optA = document.getElementById('admin-opt-a').value; data.optB = document.getElementById('admin-opt-b').value; data.optC = document.getElementById('admin-opt-c').value; data.optD = document.getElementById('admin-opt-d').value; data.correct = document.getElementById('admin-correct-opt').value; }
-            if(currentEditId) await updateDoc(doc(db, "lessons", currentEditId), data); else await addDoc(collection(db, "lessons"), data);
-            location.reload();
-        } catch(e) { alert(e.message); }
+            if(imgFile) { 
+                const iRef = ref(storage, `images/${Date.now()}_${imgFile.name}`); 
+                await uploadBytes(iRef, imgFile); 
+                imgUrl = await getDownloadURL(iRef); 
+            }
+            
+            let data = { 
+                type, title, audioUrl: url, quizImg: imgUrl, 
+                createdAt: new Date().getTime(), 
+                translation: document.getElementById('admin-translate').value, 
+                vocabulary: document.getElementById('admin-vocab').value 
+            };
+        
+            if(type === 'dictation') { 
+                data.level = document.getElementById('admin-level').value; 
+                data.script = document.getElementById('admin-script').value; 
+            } else { 
+                data.part = document.getElementById('admin-part').value; 
+                data.question = document.getElementById('admin-question').value; 
+                data.optA = document.getElementById('admin-opt-a').value; 
+                data.optB = document.getElementById('admin-opt-b').value; 
+                data.optC = document.getElementById('admin-opt-c').value; 
+                data.optD = document.getElementById('admin-opt-d').value; 
+                data.correct = document.getElementById('admin-correct-opt').value; 
+            }
+
+            if(currentEditId) {
+                await updateDoc(doc(db, "lessons", currentEditId), data);
+            } else {
+                await addDoc(collection(db, "lessons"), data);
+            }
+
+            // --- HIỆN THÔNG BÁO TỰ ĐỘNG ĐÓNG ---
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+
+            // --- RESET Ô TRỐNG ĐỂ NHẬP MỚI ---
+            currentEditId = null;
+            btn.innerText = "Lưu Lên Hệ Thống";
+            btn.disabled = false;
+            btn.style.background = "var(--success)"; // Trả lại màu xanh
+
+            // Xóa sạch các ô nhập liệu
+            const fieldsToReset = [
+                'admin-title', 'admin-script', 'admin-question', 
+                'admin-opt-a', 'admin-opt-b', 'admin-opt-c', 'admin-opt-d',
+                'admin-translate', 'admin-vocab', 'admin-audio', 'admin-quiz-img'
+            ];
+            fieldsToReset.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = "";
+            });
+
+            // Làm mới danh sách bài tập bên dưới
+            await fetchLessons(); 
+        
+        } catch(e) { 
+            alert("Lỗi: " + e.message); 
+            document.getElementById('upload-btn').disabled = false;
+        }
     };
 
     window.fetchAdminLessons = () => {
