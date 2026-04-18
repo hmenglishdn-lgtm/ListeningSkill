@@ -45,7 +45,9 @@
 
         .speed-btn { background: white; border: 2px solid #e0d0a0; padding: 8px 18px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; color: var(--text-dark); }
         .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
+        .speed-controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .speed-btn { background: white; border: 2px solid #e0d0a0; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; min-width: 80px; /* Giúp các nút có độ dài bằng nhau cho đẹp */ transition: 0.3s; }
+        .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary);}
         /* --- HIỂN THỊ DỮ LIỆU (FIX ENTER XUỐNG HÀNG) --- */
         #exercise-area, #quiz-area, .info-panel { 
             line-height: 1.8; font-size: 20px; padding: 30px; background: white; border-radius: 15px; 
@@ -74,6 +76,23 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 1550px) { .side-images { display: none; } }
         @media (max-width: 600px) { .quiz-options { grid-template-columns: 1fr; } }
+        .audio-controls { display: flex; justify-content: center; gap: 15px; margin-top: 10px; margin-bottom: 15px; }
+        .btn-audio-ctrl { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.3s; box-shadow: 0 3px 10px rgba(108, 92, 231, 0.2); }
+        .btn-audio-ctrl:hover { transform: scale(1.1); background: #5649c1;}
+        .audio-control-group {
+            background: var(--light-yellow); /* Đổi sang màu nền app để không bị lộ khi dính */
+            padding: 15px;
+            border-radius: 20px;
+            border: 2px solid var(--accent-yellow);
+            margin-bottom: 20px;
+    
+            /* --- PHẦN QUAN TRỌNG ĐỂ GHIM --- */
+            position: -webkit-sticky; /* Hỗ trợ Safari */
+            position: sticky;
+            top: 10px;        /* Cách mép trên màn hình 10px khi cuộn */
+            z-index: 1000;    /* Đảm bảo nằm đè lên nội dung bài học khi cuộn */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Thêm bóng đổ để nổi bật khi ghim */
+        }
     </style>
 </head>
 <body>
@@ -122,9 +141,19 @@
             </div>
 
             <div id="study" class="tab-content">
-                <audio id="player" controls src=""></audio>
-                <div class="speed-controls">
-                    <button class="speed-btn" onclick="changeSpeed(0.75, 'player', this)">0.75x</button><button class="speed-btn active" onclick="changeSpeed(1, 'player', this)">1.0x</button><button class="speed-btn" onclick="changeSpeed(1.25, 'player', this)">1.25x</button><button class="speed-btn" onclick="changeSpeed(1.5, 'player', this)">1.5x</button>
+                <div class="audio-control-group">
+                    <audio id="player" controls src="" style="width: 100%;"></audio>
+    
+                    <div class="audio-controls">
+                        <button class="btn-audio-ctrl" onclick="rewindAudio('player')" title="Tua lại 5s (←)"><i class="fa-solid fa-backward-step"></i></button>
+                        <button class="btn-audio-ctrl" onclick="togglePlay('player')" title="Phát/Tạm dừng (Space)"><i class="fa-solid fa-play" id="play-icon-player"></i></button>
+                    </div>
+
+                    <div class="speed-controls">
+                        <button class="speed-btn" onclick="changeSpeed(0.75, 'player', this)">0.75x</button>
+                        <button class="speed-btn active" onclick="changeSpeed(1, 'player', this)">Normal</button>
+                        <button class="speed-btn" onclick="changeSpeed(1.25, 'player', this)">1.25x</button>
+                    </div>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:15px;"><select id="level-filter" onchange="filterLessonsByLevel()"><option value="">Cấp độ</option><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><select id="lesson-select" onchange="loadLesson(this.value)"><option value="">Chọn bài</option></select></div>
                 <div id="exercise-area">Hãy chọn bài học...</div>
@@ -137,9 +166,19 @@
             </div>
 
             <div id="quiz-tab" class="tab-content" style="display:none;">
-                <audio id="player-quiz" controls src=""></audio>
-                <div class="speed-controls">
-                    <button class="speed-btn" onclick="changeSpeed(0.75, 'player-quiz', this)">0.75x</button><button class="speed-btn active" onclick="changeSpeed(1, 'player-quiz', this)">1.0x</button><button class="speed-btn" onclick="changeSpeed(1.25, 'player-quiz', this)">1.25x</button>
+                <div class="audio-control-group">
+                    <audio id="player-quiz" controls src="" style="width: 100%;"></audio>
+    
+                    <div class="audio-controls">
+                        <button class="btn-audio-ctrl" onclick="rewindAudio('player-quiz')" title="Tua lại 5s (←)"><i class="fa-solid fa-backward-step"></i></button>
+                        <button class="btn-audio-ctrl" onclick="togglePlay('player-quiz')" title="Phát/Tạm dừng (Space)"><i class="fa-solid fa-play" id="play-icon-player-quiz"></i></button>
+                    </div>
+
+                    <div class="speed-controls">
+                        <button class="speed-btn" onclick="changeSpeed(0.75, 'player-quiz', this)">0.75x</button>
+                        <button class="speed-btn active" onclick="changeSpeed(1, 'player-quiz', this)">Normal</button>
+                        <button class="speed-btn" onclick="changeSpeed(1.25, 'player-quiz', this)">1.25x</button>
+                    </div>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:15px;"><select id="part-filter" onchange="filterQuizByPart()"><option value="">Chọn Part</option><option value="Part1">Part 1</option><option value="Part2">Part 2</option><option value="Part3">Part 3</option><option value="Part4">Part 4</option></select><select id="quiz-select" onchange="loadQuiz(this.value)"><option value="">Chọn câu hỏi</option></select></div>
                 <div id="quiz-image-container" class="quiz-img-container"><img id="quiz-image-display" src=""></div>
@@ -370,7 +409,60 @@
     window.filterLessonsByLevel = () => { const lvl = document.getElementById('level-filter').value; const sel = document.getElementById('lesson-select'); sel.innerHTML = '<option value="">Chọn bài học</option>'; allLessons.filter(l => l.type !== 'quiz' && (!lvl || l.level === lvl)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
     window.filterQuizByPart = () => { const part = document.getElementById('part-filter').value; const sel = document.getElementById('quiz-select'); sel.innerHTML = '<option value="">Chọn câu hỏi</option>'; allLessons.filter(l => l.type === 'quiz' && (!part || l.part === part)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
     window.toggleInfo = (id) => { const p = document.getElementById(id); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; };
-    window.changeSpeed = (s, id, b) => { document.getElementById(id).playbackRate = s; b.parentNode.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active')); b.classList.add('active'); };
+    window.changeSpeed = (s, id, b) => { 
+        document.getElementById(id).playbackRate = s; 
+        // Xóa class active ở tất cả các nút trong cùng nhóm
+        b.parentNode.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active')); 
+        // Thêm active cho nút vừa bấm
+        b.classList.add('active'); 
+    };
+    // Hàm phát/tạm dừng
+    window.togglePlay = (id) => {
+        const audio = document.getElementById(id);
+        const icon = document.getElementById('play-icon-' + id);
+        if (audio.paused) {
+            audio.play();
+            icon.className = "fa-solid fa-pause";
+        } else {
+            audio.pause();
+            icon.className = "fa-solid fa-play";
+        }
+    };
+
+    // Hàm tua lại 5 giây
+    window.rewindAudio = (id) => {
+        const audio = document.getElementById(id);
+        audio.currentTime = Math.max(0, audio.currentTime - 5);
+    };
+
+    // Xử lý phím tắt
+    document.addEventListener('keydown', (e) => {
+        // Không chạy phím tắt nếu đang gõ vào ô input hoặc textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Lấy Audio của tab đang hiển thị
+        const isStudyTab = document.getElementById('study').style.display !== 'none';
+        const activeAudioId = isStudyTab ? 'player' : 'player-quiz';
+
+        if (e.code === 'Space') {
+            e.preventDefault(); // Ngăn cuộn trang khi bấm Space
+            window.togglePlay(activeAudioId);
+        } 
+        else if (e.code === 'ArrowLeft') {
+            e.preventDefault();
+            window.rewindAudio(activeAudioId);
+        }
+    });
+
+    // Cập nhật icon khi bấm trực tiếp vào thanh audio mặc định của trình duyệt
+    ['player', 'player-quiz'].forEach(id => {
+        const a = document.getElementById(id);
+        const icon = document.getElementById('play-icon-' + id);
+        if(a) {
+            a.onplay = () => icon.className = "fa-solid fa-pause";
+            a.onpause = () => icon.className = "fa-solid fa-play";
+        }
+    });
 </script>
 </body>
 </html>
