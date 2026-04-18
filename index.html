@@ -338,15 +338,28 @@
     window.loadQuiz = (id) => {
         const d = allLessons.find(l => l.id === id); if(!d) return;
         const p = document.getElementById('player-quiz'); p.src = d.audioUrl; p.play();
+        
         const imgCont = document.getElementById('quiz-image-container'), imgDisp = document.getElementById('quiz-image-display');
         if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } else { imgCont.style.display = 'none'; }
-        document.getElementById('quiz-area').innerHTML = parseTextWithBlanks(d.question);
+        
+        // --- XỬ LÝ ẨN/HIỆN QUỐC Ô CÂU HỎI ---
+        const quizArea = document.getElementById('quiz-area');
+        if (d.part === 'Part1') {
+            quizArea.style.display = 'none'; // Xóa ô trắng dưới hình trong Part 1
+        } else {
+            quizArea.style.display = 'block'; // Hiện lại cho các Part khác
+            quizArea.innerHTML = parseTextWithBlanks(d.question);
+        }
+        // ------------------------------------
+
         document.getElementById('quiz-translate-panel').style.display = 'none';
         document.getElementById('quiz-vocab-panel').style.display = 'none';
         document.getElementById('quiz-translate-panel').innerText = d.translation || "Chưa có bản dịch";
         document.getElementById('quiz-vocab-panel').innerText = d.vocabulary || "Chưa có từ vựng";
+        
         const container = document.getElementById('quiz-options-container'); container.innerHTML = "";
         const opts = (d.part === 'Part2') ? ['A','B','C'] : ['A','B','C','D'];
+        
         opts.forEach(o => {
             if(d['opt'+o]) {
                 const btn = document.createElement('button'); btn.className = 'option-btn';
@@ -360,11 +373,12 @@
                 container.appendChild(btn);
             }
         });
-        const hasBlanks = d.question.includes('[') || (d.optA && d.optA.includes('['));
+        
+        // Chỉnh sửa kiểm tra hasBlanks để tránh lỗi nếu question bị ẩn (null)
+        const hasBlanks = (d.question && d.question.includes('[')) || (d.optA && d.optA.includes('['));
         document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
         document.getElementById('quiz-score-display').style.display = 'none';
     };
-
     window.checkResults = (areaId, scoreId, isQuiz = false) => {
         const area = document.getElementById(areaId);
         const optCont = isQuiz ? document.getElementById('quiz-options-container') : null;
