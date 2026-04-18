@@ -270,11 +270,45 @@
                 <input type="text" id="admin-title" placeholder="Tiêu đề bài học">
                 <div id="dictation-fields"><select id="admin-level"><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><textarea id="admin-script" rows="4" placeholder="Kịch bản [từ điền]"></textarea></div>
                 <div id="quiz-fields" style="display:none;">
-                    <select id="admin-part"><option value="Part1">Part 1 (4 câu + Ảnh)</option><option value="Part2">Part 2 (3 câu)</option><option value="Part3">Part 3 (4 câu)</option><option value="Part4">Part 4 (4 câu)</option></select>
-                    <label>Ảnh Part 1:</label><input type="file" id="admin-quiz-img" accept="image/*">
-                    <textarea id="admin-question" rows="2" placeholder="Đề bài (Dùng [])"></textarea>
-                    <input type="text" id="admin-opt-a" placeholder="A (Dùng [])"><input type="text" id="admin-opt-b" placeholder="B"><input type="text" id="admin-opt-c" placeholder="C"><input type="text" id="admin-opt-d" placeholder="D"><select id="admin-correct-opt"><option value="A">Đúng A</option><option value="B">Đúng B</option><option value="C">Đúng C</option><option value="D">Đúng D</option></select>
-                </div>
+                    <select id="admin-part" onchange="toggleQuizInputMode()">
+                        <option value="Part1">Part 1 (4 câu + Ảnh)</option>
+                        <option value="Part2">Part 2 (3 câu)</option>
+                        <option value="Part3">Part 3 (Nhóm 3 câu)</option>
+                        <option value="Part4">Part 4 (Nhóm 3 câu)</option>
+                    </select>
+                    
+                    <div id="single-quiz-input">
+                        <label>Ảnh Part 1:</label><input type="file" id="admin-quiz-img" accept="image/*">
+                        <textarea id="admin-question" rows="2" placeholder="Đề bài (Dùng [])"></textarea>
+                        <input type="text" id="admin-opt-a" placeholder="A (Dùng [])">
+                        <input type="text" id="admin-opt-b" placeholder="B">
+                        <input type="text" id="admin-opt-c" placeholder="C">
+                        <input type="text" id="admin-opt-d" placeholder="D">
+                        <select id="admin-correct-opt">
+                            <option value="A">Đúng A</option>
+                            <option value="B">Đúng B</option>
+                            <option value="C">Đúng C</option>
+                            <option value="D">Đúng D</option>
+                        </select>
+                    </div>
+
+                    <div id="group-quiz-input" style="display:none; border: 2px dashed var(--primary); padding: 15px; border-radius: 15px; background: #fff; margin-bottom: 15px;">
+                        <p style="font-weight:bold; color:var(--primary); margin-bottom: 10px;">
+                            <i class="fa-solid fa-layer-group"></i> Nhập liệu nhóm 3 câu hỏi (Q1 - Q3)
+                        </p>
+
+                        <div style="background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
+                            <label style="font-weight:bold;">Đề bài chung (Dùng [] nếu có điền từ):</label>
+                            <textarea id="admin-group-context" rows="3" placeholder="Nhập đoạn văn chung hoặc lời dẫn cho cả 3 câu..." style="width:100%; margin-top:5px;"></textarea>
+                            
+                            <label style="font-weight:bold; margin-top:10px; display:block;">Ảnh minh họa (nếu có):</label>
+                            <input type="file" id="admin-group-img" accept="image/*" style="margin-top:5px;">
+                        </div>
+
+                        <div id="questions-container">
+                            </div>
+                    </div>
+                </div>                
                 <label>Audio:</label><input type="file" id="admin-audio" accept="audio/*">
                 <textarea id="admin-translate" rows="2" placeholder="Bản dịch"></textarea><textarea id="admin-vocab" rows="2" placeholder="Từ vựng"></textarea>
                 <button id="upload-btn" class="btn-main" style="background: var(--success);">Lưu Lên Hệ Thống</button>
@@ -411,44 +445,138 @@
         const p = document.getElementById('player-quiz'); p.src = d.audioUrl; p.play();
         
         const imgCont = document.getElementById('quiz-image-container'), imgDisp = document.getElementById('quiz-image-display');
-        if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } else { imgCont.style.display = 'none'; }
-        
-        // --- XỬ LÝ ẨN/HIỆN QUỐC Ô CÂU HỎI ---
         const quizArea = document.getElementById('quiz-area');
-        if (d.part === 'Part1') {
-            quizArea.style.display = 'none'; // Xóa ô trắng dưới hình trong Part 1
-        } else {
-            quizArea.style.display = 'block'; // Hiện lại cho các Part khác
-            quizArea.innerHTML = parseTextWithBlanks(d.question);
-        }
-        // ------------------------------------
-
+        const container = document.getElementById('quiz-options-container');
+        
+        // Reset giao diện ban đầu
+        container.innerHTML = "";
         document.getElementById('quiz-translate-panel').style.display = 'none';
         document.getElementById('quiz-vocab-panel').style.display = 'none';
         document.getElementById('quiz-translate-panel').innerText = d.translation || "Chưa có bản dịch";
         document.getElementById('quiz-vocab-panel').innerText = d.vocabulary || "Chưa có từ vựng";
-        
-        const container = document.getElementById('quiz-options-container'); container.innerHTML = "";
-        const opts = (d.part === 'Part2') ? ['A','B','C'] : ['A','B','C','D'];
-        
-        opts.forEach(o => {
-            if(d['opt'+o]) {
-                const btn = document.createElement('button'); btn.className = 'option-btn';
-                btn.innerHTML = `${o}. ${parseTextWithBlanks(d['opt'+o])}`;
-                btn.onclick = (e) => {
-                    if(e.target.tagName === 'INPUT') return;
-                    document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; b.classList.remove('selected'); });
-                    btn.classList.add('selected');
-                    if(o === d.correct) btn.classList.add('correct'); else { btn.classList.add('wrong'); document.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(d.correct)) b.classList.add('correct'); }); }
-                };
-                container.appendChild(btn);
-            }
-        });
-        
-        // Chỉnh sửa kiểm tra hasBlanks để tránh lỗi nếu question bị ẩn (null)
-        const hasBlanks = (d.question && d.question.includes('[')) || (d.optA && d.optA.includes('['));
-        document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
         document.getElementById('quiz-score-display').style.display = 'none';
+
+        // Xử lý hình ảnh (chỉ dành cho Part 1)
+        if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } 
+        else { imgCont.style.display = 'none'; }
+
+// KIỂM TRA NẾU LÀ DẠNG NHÓM (PART 3 & 4)
+        if (d.isGroup && d.questions) {
+            // 1. Hiển thị hình ảnh
+            if(d.quizImg) { 
+                imgDisp.src = d.quizImg; 
+                imgCont.style.display = 'block'; 
+            } else { 
+                imgCont.style.display = 'none'; 
+            }
+
+            // 2. Hiển thị Đề bài chung
+            quizArea.style.display = 'block';
+            quizArea.innerHTML = d.groupContext ? parseTextWithBlanks(d.groupContext) : "Nghe và trả lời 3 câu hỏi:";
+
+            // 3. Vẽ 3 bộ Câu hỏi + Đáp án
+            container.innerHTML = ""; // Làm sạch container trước khi vẽ
+            
+            d.questions.forEach((q, qIdx) => {
+                // Tạo tiêu đề câu hỏi con
+                const qDiv = document.createElement('div');
+                qDiv.style = "margin-top:25px; font-weight:bold; border-left:4px solid var(--primary); padding-left:10px; text-align:left; color: var(--text-dark);";
+                qDiv.innerHTML = `Câu ${qIdx + 1}: ${parseTextWithBlanks(q.text)}`;
+                container.appendChild(qDiv);
+
+                // Tạo khung chứa đáp án cho CÂU HỎI NÀY
+                const optGrid = document.createElement('div');
+                optGrid.className = 'quiz-options'; // Sử dụng Grid 2x2 như Part 1
+                optGrid.style = "margin-bottom:15px; margin-top:10px;";
+
+                ['A','B','C','D'].forEach(o => {
+                    // Lấy nội dung đáp án tương ứng (optA, optB...)
+                    const optContent = q['opt'+o];
+                    if(optContent) {
+                        const btn = document.createElement('button');
+                        btn.className = 'option-btn';
+                        btn.innerHTML = `${o}. ${parseTextWithBlanks(optContent)}`;
+                        
+                        btn.onclick = (e) => {
+                            if(e.target.tagName === 'INPUT') return;
+                            // Chỉ khóa các nút TRONG CÙNG MỘT CÂU HỎI CON
+                            optGrid.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                            btn.classList.add('selected');
+                            
+                            if(o === q.correct) {
+                                btn.classList.add('correct');
+                            } else {
+                                btn.classList.add('wrong');
+                                // Hiển thị đáp án đúng của câu này
+                                optGrid.querySelectorAll('.option-btn').forEach(b => {
+                                    if(b.innerHTML.startsWith(o === 'A' ? 'A.' : (o === 'B' ? 'B.' : (o === 'C' ? 'C.' : 'D.')))) {
+                                        // Tìm nút đúng dựa trên q.correct
+                                    }
+                                });
+                                // Logic tìm nút đúng chính xác hơn:
+                                Array.from(optGrid.querySelectorAll('.option-btn')).forEach(b => {
+                                    if(b.innerHTML.trim().startsWith(q.correct + '.')) b.classList.add('correct');
+                                });
+                            }
+                        };
+                        optGrid.appendChild(btn);
+                    }
+                });
+                container.appendChild(optGrid);
+
+                // 4. Thêm nút Dịch nhỏ dưới mỗi câu hỏi (nếu có lời dịch)
+                if (q.qTranslate) {
+                    const transBtn = document.createElement('button');
+                    transBtn.innerHTML = '<i class="fa-solid fa-language"></i> Xem dịch câu ' + (qIdx + 1);
+                    transBtn.style = "background:none; border:none; color:var(--primary); cursor:pointer; font-size:12px; display:block; text-align:left; margin-top:5px; margin-bottom:15px; text-decoration:underline;";
+                    
+                    const transDiv = document.createElement('div');
+                    transDiv.style = "display:none; font-size:13px; color:#666; font-style:italic; padding:8px; background:#f9f9f9; border-radius:8px; margin-bottom:15px; border:1px solid #eee;";
+                    transDiv.innerText = q.qTranslate;
+
+                    transBtn.onclick = () => {
+                        transDiv.style.display = transDiv.style.display === 'none' ? 'block' : 'none';
+                    };
+                    container.appendChild(transBtn);
+                    container.appendChild(transDiv);
+                }
+            });
+        }        // DẠNG ĐƠN LẺ (PART 1, 2 HOẶC BÀI LẺ)
+        else {
+            if (d.part === 'Part1') {
+                quizArea.style.display = 'none'; 
+            } else {
+                quizArea.style.display = 'block';
+                quizArea.innerHTML = parseTextWithBlanks(d.question);
+            }
+
+            const opts = (d.part === 'Part2') ? ['A','B','C'] : ['A','B','C','D'];
+            opts.forEach(o => {
+                if(d['opt'+o]) {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerHTML = `${o}. ${parseTextWithBlanks(d['opt'+o])}`;
+                    btn.onclick = (e) => {
+                        if(e.target.tagName === 'INPUT') return;
+                        container.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; b.classList.remove('selected'); });
+                        btn.classList.add('selected');
+                        if(o === d.correct) btn.classList.add('correct'); 
+                        else {
+                            btn.classList.add('wrong');
+                            container.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(d.correct)) b.classList.add('correct'); });
+                        }
+                    };
+                    container.appendChild(btn);
+                }
+            });
+        }
+
+        // Kiểm tra ô trống điền từ (cho cả dạng đơn và dạng nhóm)
+        const hasBlanks = d.isGroup 
+            ? d.questions.some(q => q.text.includes('[') || q.optA.includes('['))
+            : (d.question && d.question.includes('[')) || (d.optA && d.optA.includes('['));
+            
+        document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
     };
     window.checkResults = (areaId, scoreId, isQuiz = false) => {
         const area = document.getElementById(areaId);
@@ -473,18 +601,18 @@
     };
 
     document.getElementById('upload-btn').onclick = async () => {
-        const type = document.getElementById('admin-type').value;
+        const type = document.getElementById('admin-type').value; // 'dictation' hoặc 'quiz'
         const title = document.getElementById('admin-title').value;
         const file = document.getElementById('admin-audio').files[0];
-        const imgFile = document.getElementById('admin-quiz-img').files[0];
         
-        if(!title) { alert("Thiếu tiêu đề!"); return; }
+        if(!title) { alert("Vui lòng nhập tiêu đề!"); return; }
         
         try {
             const btn = document.getElementById('upload-btn');
             btn.innerText = "⏳ Đang lưu...";
             btn.disabled = true;
 
+            // 1. Xử lý Audio
             let url = currentEditId ? allLessons.find(l => l.id === currentEditId).audioUrl : "";
             if(file) { 
                 const sRef = ref(storage, `audios/${Date.now()}_${file.name}`); 
@@ -492,70 +620,114 @@
                 url = await getDownloadURL(sRef); 
             }
             
-            let imgUrl = currentEditId ? (allLessons.find(l => l.id === currentEditId).quizImg || "") : "";
-            if(imgFile) { 
-                const iRef = ref(storage, `images/${Date.now()}_${imgFile.name}`); 
-                await uploadBytes(iRef, imgFile); 
-                imgUrl = await getDownloadURL(iRef); 
-            }
-            
+            // 2. Khởi tạo đối tượng dữ liệu chung
             let data = { 
-                type, title, audioUrl: url, quizImg: imgUrl, 
+                type, title, audioUrl: url, 
                 createdAt: new Date().getTime(), 
                 translation: document.getElementById('admin-translate').value, 
                 vocabulary: document.getElementById('admin-vocab').value 
             };
-        
+            
+            // 3. Xử lý riêng theo từng loại bài tập
             if(type === 'dictation') { 
+                // Dạng Điền từ
                 data.level = document.getElementById('admin-level').value; 
                 data.script = document.getElementById('admin-script').value; 
             } else { 
-                data.part = document.getElementById('admin-part').value; 
-                data.question = document.getElementById('admin-question').value; 
-                data.optA = document.getElementById('admin-opt-a').value; 
-                data.optB = document.getElementById('admin-opt-b').value; 
-                data.optC = document.getElementById('admin-opt-c').value; 
-                data.optD = document.getElementById('admin-opt-d').value; 
-                data.correct = document.getElementById('admin-correct-opt').value; 
+                // Dạng Trắc nghiệm (Quiz)
+                const part = document.getElementById('admin-part').value;
+                data.part = part;
+
+                if (part === 'Part3' || part === 'Part4') {
+                    // NHÓM 3 CÂU
+                    data.isGroup = true;
+                    data.groupContext = document.getElementById('admin-group-context').value;
+                    
+                    // Lưu ảnh cho Group nếu có
+                    const groupImgFile = document.getElementById('admin-group-img').files[0];
+                    if(groupImgFile) {
+                        const iRef = ref(storage, `images/${Date.now()}_group.png`);
+                        await uploadBytes(iRef, groupImgFile);
+                        data.quizImg = await getDownloadURL(iRef);
+                    } else if (currentEditId) {
+                        data.quizImg = allLessons.find(l => l.id === currentEditId).quizImg || "";
+                    }
+
+                    // Thu thập 3 câu hỏi con
+                    data.questions = [1, 2, 3].map(i => ({
+                        text: document.getElementById(`q${i}-text`).value,
+                        optA: document.getElementById(`q${i}-a`).value,
+                        optB: document.getElementById(`q${i}-b`).value,
+                        optC: document.getElementById(`q${i}-c`).value,
+                        optD: document.getElementById(`q${i}-d`).value,
+                        correct: document.getElementById(`q${i}-correct`).value,
+                        qTranslate: document.getElementById(`q${i}-trans`) ? document.getElementById(`q${i}-trans`).value : ""
+                    }));
+                } else {
+                    // PART 1, 2 (CÂU ĐƠN)
+                    data.isGroup = false;
+                    data.question = document.getElementById('admin-question').value;
+                    data.optA = document.getElementById('admin-opt-a').value;
+                    data.optB = document.getElementById('admin-opt-b').value;
+                    data.optC = document.getElementById('admin-opt-c').value;
+                    data.optD = document.getElementById('admin-opt-d').value;
+                    data.correct = document.getElementById('admin-correct-opt').value;
+
+                    // Ảnh cho Part 1
+                    const singleImgFile = document.getElementById('admin-quiz-img').files[0];
+                    if(singleImgFile) {
+                        const iRef = ref(storage, `images/${Date.now()}_single.png`);
+                        await uploadBytes(iRef, singleImgFile);
+                        data.quizImg = await getDownloadURL(iRef);
+                    } else if (currentEditId) {
+                        data.quizImg = allLessons.find(l => l.id === currentEditId).quizImg || "";
+                    }
+                }
             }
 
+            // 4. Gửi lên Firebase
             if(currentEditId) {
                 await updateDoc(doc(db, "lessons", currentEditId), data);
             } else {
                 await addDoc(collection(db, "lessons"), data);
             }
 
-            // --- HIỆN THÔNG BÁO TỰ ĐỘNG ĐÓNG ---
-            const toast = document.getElementById('toast');
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 3000);
-
-            // --- RESET Ô TRỐNG ĐỂ NHẬP MỚI ---
-            currentEditId = null;
-            btn.innerText = "Lưu Lên Hệ Thống";
-            btn.disabled = false;
-            btn.style.background = "var(--success)"; // Trả lại màu xanh
-
-            // Xóa sạch các ô nhập liệu
-            const fieldsToReset = [
-                'admin-title', 'admin-script', 'admin-question', 
-                'admin-opt-a', 'admin-opt-b', 'admin-opt-c', 'admin-opt-d',
-                'admin-translate', 'admin-vocab', 'admin-audio', 'admin-quiz-img'
-            ];
-            fieldsToReset.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = "";
-            });
-
-            // Làm mới danh sách bài tập bên dưới
+            // 5. Thông báo và Reset
+            showToast("✅ Đã lưu bài tập thành công!");
+            resetAdminForm();
             await fetchLessons(); 
-        
+            
         } catch(e) { 
-            alert("Lỗi: " + e.message); 
+            console.error(e);
+            alert("Lỗi lưu dữ liệu: " + e.message); 
+        } finally {
+            document.getElementById('upload-btn').innerText = "Lưu Lên Hệ Thống";
             document.getElementById('upload-btn').disabled = false;
         }
     };
 
+    // Hàm reset form sạch sẽ
+    function resetAdminForm() {
+        currentEditId = null;
+        const ids = [
+            'admin-title', 'admin-script', 'admin-question', 'admin-translate', 'admin-vocab',
+            'admin-opt-a', 'admin-opt-b', 'admin-opt-c', 'admin-opt-d',
+            'admin-group-context', 'admin-audio', 'admin-quiz-img', 'admin-group-img'
+        ];
+        ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ""; });
+        
+        for(let i=1; i<=3; i++) {
+            const gIds = [`q${i}-text`, `q${i}-a`, `q${i}-b`, `q${i}-c`, `q${i}-d`, `q${i}-trans`];
+            gIds.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ""; });
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
     window.fetchAdminLessons = () => {
         const div = document.getElementById('admin-lesson-list');
         if(!div) return;
@@ -629,34 +801,60 @@
         if(!d) return; 
         currentEditId = id;
         
-        // Đổ dữ liệu vào form
+        // 1. Đổ dữ liệu chung
         document.getElementById('admin-type').value = d.type || 'dictation'; 
-        toggleAdminForm();
         document.getElementById('admin-title').value = d.title; 
         document.getElementById('admin-translate').value = d.translation || ""; 
         document.getElementById('admin-vocab').value = d.vocabulary || "";
         
+        // Gọi hàm để ẩn/hiện các khung nhập liệu tương ứng (Dictation hay Quiz)
+        toggleAdminForm();
+
         if(d.type === 'quiz') { 
             document.getElementById('admin-part').value = d.part; 
-            document.getElementById('admin-question').value = d.question; 
-            document.getElementById('admin-opt-a').value = d.optA || ""; 
-            document.getElementById('admin-opt-b').value = d.optB || ""; 
-            document.getElementById('admin-opt-c').value = d.optC || ""; 
-            document.getElementById('admin-opt-d').value = d.optD || ""; 
-            document.getElementById('admin-correct-opt').value = d.correct || "A"; 
+            
+            // Gọi hàm để ẩn/hiện khung Single hay Group
+            toggleQuizInputMode();
+
+            if (d.isGroup && d.questions) {
+                // Đổ dữ liệu vào khung NHÓM 3 CÂU (Part 3, 4)
+                document.getElementById('admin-group-context').value = d.groupContext || "";
+                
+                d.questions.forEach((q, i) => {
+                    const index = i + 1;
+                    document.getElementById(`q${index}-text`).value = q.text || "";
+                    document.getElementById(`q${index}-a`).value = q.optA || "";
+                    document.getElementById(`q${index}-b`).value = q.optB || "";
+                    document.getElementById(`q${index}-c`).value = q.optC || "";
+                    document.getElementById(`q${index}-d`).value = q.optD || "";
+                    document.getElementById(`q${index}-correct`).value = q.correct || "A";
+                    if(document.getElementById(`q${index}-trans`)) {
+                        document.getElementById(`q${index}-trans`).value = q.qTranslate || "";
+                    }
+                });
+            } else {
+                // Đổ dữ liệu vào khung ĐƠN (Part 1, 2)
+                document.getElementById('admin-question').value = d.question || ""; 
+                document.getElementById('admin-opt-a').value = d.optA || ""; 
+                document.getElementById('admin-opt-b').value = d.optB || ""; 
+                document.getElementById('admin-opt-c').value = d.optC || ""; 
+                document.getElementById('admin-opt-d').value = d.optD || ""; 
+                document.getElementById('admin-correct-opt').value = d.correct || "A"; 
+            }
         } else { 
+            // Đổ dữ liệu vào khung ĐIỀN TỪ
             document.getElementById('admin-level').value = d.level; 
             document.getElementById('admin-script').value = d.script; 
         }
         
-        // Đổi chữ nút bấm để nhận biết đang sửa
-        document.getElementById('upload-btn').innerText = "Cập Nhật Bài Viết";
-        document.getElementById('upload-btn').style.background = "orange";
+        // Thay đổi giao diện nút để Admin biết đang ở chế độ sửa
+        const saveBtn = document.getElementById('upload-btn');
+        saveBtn.innerText = "💾 Cập Nhật Bài Viết";
+        saveBtn.style.background = "#f39c12"; // Màu cam để phân biệt với thêm mới
         
-        // Cuộn lên đầu phần quản lý mượt mà
+        // Cuộn lên đầu trang quản lý mượt mà
         window.scrollTo({ top: document.getElementById('admin-lessons').offsetTop - 50, behavior: 'smooth' });
-    };
-    window.deleteLesson = async (id) => { if(confirm("Xóa?")) { await deleteDoc(doc(db, "lessons", id)); fetchLessons(); } };
+    };    window.deleteLesson = async (id) => { if(confirm("Xóa?")) { await deleteDoc(doc(db, "lessons", id)); fetchLessons(); } };
 
     async function fetchAdminData() {
         const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
@@ -744,6 +942,51 @@
             a.onpause = () => icon.className = "fa-solid fa-play";
         }
     });
+    window.toggleQuizInputMode = () => {
+        const part = document.getElementById('admin-part').value;
+        const isGroup = (part === 'Part3' || part === 'Part4');
+        
+        const singleDiv = document.getElementById('single-quiz-input');
+        const groupDiv = document.getElementById('group-quiz-input');
+        
+        if(singleDiv) singleDiv.style.display = isGroup ? 'none' : 'block';
+        if(groupDiv) groupDiv.style.display = isGroup ? 'block' : 'none';
+    };    
+    // Hàm tạo giao diện nhập liệu cho 3 câu hỏi con
+    function renderGroupInputs() {
+        const container = document.getElementById('questions-container');
+        if (!container) return;
+        let html = '';
+        for (let i = 1; i <= 3; i++) {
+            html += `
+                <div class="q-block" style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+                    <label style="font-weight:bold;">Câu hỏi ${i}:</label>
+                    <input type="text" id="q${i}-text" placeholder="Nội dung câu hỏi ${i}..." style="margin-bottom:10px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <input type="text" id="q${i}-a" placeholder="A">
+                        <input type="text" id="q${i}-b" placeholder="B">
+                        <input type="text" id="q${i}-c" placeholder="C">
+                        <input type="text" id="q${i}-d" placeholder="D">
+                    </div>
+                    <select id="q${i}-correct" style="width:auto; margin-top:5px;">
+                        <option value="A">Đúng A</option><option value="B">Đúng B</option>
+                        <option value="C">Đúng C</option><option value="D">Đúng D</option>
+                    </select>
+                </div>`;
+        }
+        container.innerHTML = html;
+    }
+    // Chạy hàm vẽ ngay khi App khởi động
+    renderGroupInputs();
+
+    // Hàm ẩn/hiện form tùy theo Part được chọn
+    window.toggleQuizInputMode = () => {
+        const part = document.getElementById('admin-part').value;
+        const isGroup = (part === 'Part3' || part === 'Part4');
+        
+        document.getElementById('single-quiz-input').style.display = isGroup ? 'none' : 'block';
+        document.getElementById('group-quiz-input').style.display = isGroup ? 'block' : 'none';
+    };
 </script>
 </body>
 </html>
