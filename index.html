@@ -885,8 +885,38 @@
 
     // --- COMMON ---
     window.showTab = (e, id) => { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.querySelectorAll('.tab-nav .btn-main').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; if(e) e.currentTarget.classList.add('active'); else document.getElementById('tab-study-btn').classList.add('active'); };
-    window.filterLessonsByLevel = () => { const lvl = document.getElementById('level-filter').value; const sel = document.getElementById('lesson-select'); sel.innerHTML = '<option value="">Chọn bài học</option>'; allLessons.filter(l => l.type !== 'quiz' && (!lvl || l.level === lvl)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
-    window.filterQuizByPart = () => { const part = document.getElementById('part-filter').value; const sel = document.getElementById('quiz-select'); sel.innerHTML = '<option value="">Chọn câu hỏi</option>'; allLessons.filter(l => l.type === 'quiz' && (!part || l.part === part)).forEach(d => { sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`; }); };
+    window.filterLessonsByLevel = () => {
+        const lvl = document.getElementById('level-filter').value;
+        const sel = document.getElementById('lesson-select');
+        sel.innerHTML = '<option value="">Chọn bài học</option>';
+        
+        if (!lvl) return;
+
+        // Lọc và Sắp xếp theo Tiêu đề A-Z
+        const filtered = allLessons
+            .filter(l => l.type !== 'quiz' && l.level === lvl)
+            .sort((a, b) => a.title.localeCompare(b.title));
+
+        filtered.forEach(d => {
+            sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+        });
+    };
+    window.filterQuizByPart = () => {
+        const part = document.getElementById('part-filter').value;
+        const sel = document.getElementById('quiz-select');
+        sel.innerHTML = '<option value="">Chọn câu hỏi</option>';
+        
+        if (!part) return;
+
+        // Lọc và Sắp xếp theo Tiêu đề A-Z
+        const filtered = allLessons
+            .filter(l => l.type === 'quiz' && l.part === part)
+            .sort((a, b) => a.title.localeCompare(b.title));
+
+        filtered.forEach(d => {
+            sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+        });
+    };
     window.toggleInfo = (id) => { const p = document.getElementById(id); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; };
     window.changeSpeed = (s, id, b) => { 
         document.getElementById(id).playbackRate = s; 
