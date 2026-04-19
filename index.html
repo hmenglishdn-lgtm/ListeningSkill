@@ -371,7 +371,36 @@
     const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const storage = getStorage(app);
     const ADMIN_EMAIL = "hmenglishdn@gmail.com";
     setPersistence(auth, browserSessionPersistence);
+    // Hàm sắp xếp thông minh: Ưu tiên Nhóm đề, sau đó mới đến Số thứ tự
+    const smartSort = (a, b) => {
+        const titleA = a.title || "";
+        const titleB = b.title || "";
+        
+        // Regex linh hoạt: Tìm số ở đầu chuỗi (ví dụ: "01", "01-03", "101")
+        const regex = /^([\d-]+)\s+(.*)$/;
+        const matchA = titleA.match(regex);
+        const matchB = titleB.match(regex);
 
+        if (matchA && matchB) {
+            const codeA = matchA[2].trim().toLowerCase();
+            const codeB = matchB[2].trim().toLowerCase();
+            
+            // 1. So sánh mã đề (T1 ETS...)
+            if (codeA !== codeB) return codeA.localeCompare(codeB);
+
+            // 2. Nếu cùng mã đề, so sánh số thứ tự
+            const numA = parseInt(matchA[1].split('-')[0]) || 0;
+            const numB = parseInt(matchB[1].split('-')[0]) || 0;
+            return numA - numB;
+        }
+    
+    // Nếu không khớp định dạng, xếp theo bảng chữ cái bình thường
+    return titleA.localeCompare(titleB);
+};
+window.smartSort = smartSort; // Gán vào window để chắc chắn các hàm khác gọi được
+
+// Quan trọng: Đẩy vào window để các hàm khác luôn thấy nó
+window.smartSort = smartSort;
     let allLessons = []; let currentEditId = null;
     // --- AUTH LOGIC ---
     document.getElementById('login-btn').onclick = async () => {
@@ -856,7 +885,7 @@
         if(!div) return;
         div.innerHTML = "<h4 style='margin: 20px 0 10px 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 5px;'>📚 Danh sách bài tập hệ thống</h4>";
 
-        // 1. Nhóm bài tập vào Object
+        // 1. Nhóm bài tập vào Object theo Loại và Part/Level
         const categories = {};
         allLessons.forEach(d => {
             const catName = d.type === 'quiz' ? `Trắc nghiệm - ${d.part}` : `Điền từ - ${d.level}`;
@@ -864,24 +893,24 @@
             categories[catName].push(d);
         });
 
-        // 2. Xác định thứ tự ưu tiên của các danh mục (Thứ tự bạn muốn hiển thị)
+        // 2. Thứ tự hiển thị các danh mục (Accordion)
         const priority = [
             "Điền từ - Co_ban", "Điền từ - Trung_cap", "Điền từ - Nang_cao",
             "Trắc nghiệm - Part1", "Trắc nghiệm - Part2", "Trắc nghiệm - Part3", "Trắc nghiệm - Part4"
         ];
 
-        // 3. Lấy danh sách các danh mục hiện có và sắp xếp theo priority
+        // 3. Lấy danh sách các danh mục và sắp xếp theo priority
         const sortedCatKeys = Object.keys(categories).sort((a, b) => {
             return priority.indexOf(a) - priority.indexOf(b);
         });
 
-        // 4. Duyệt qua từng danh mục đã sắp xếp để vẽ HTML
+        // 4. Duyệt qua từng danh mục để vẽ HTML
         sortedCatKeys.forEach(catName => {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'admin-category-group';
 
-            // Sắp xếp các bài tập bên trong danh mục theo Tiêu đề (A-Z)
-            const sortedItems = categories[catName].sort((a, b) => a.title.localeCompare(b.title));
+            // SẮP XẾP THÔNG MINH: Nhóm đề trước, số thứ tự sau (Áp dụng cho mọi Part)
+            const sortedItems = categories[catName].sort(smartSort);
 
             groupDiv.innerHTML = `
                 <div class="admin-category-header" onclick="toggleCategory(this)">
@@ -1018,7 +1047,7 @@
         // Lọc và Sắp xếp theo Tiêu đề A-Z
         const filtered = allLessons
             .filter(l => l.type !== 'quiz' && l.level === lvl)
-            .sort((a, b) => a.title.localeCompare(b.title));
+            .sort(smartSort); // Thay a.title.localeCompare(b.title) bằng smartSort
 
         filtered.forEach(d => {
             sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
@@ -1031,13 +1060,21 @@
         
         if (!part) return;
 
-        // Lọc và Sắp xếp theo Tiêu đề A-Z
+        // Phải đảm bảo biến allLessons đã có dữ liệu từ Firebase
         const filtered = allLessons
             .filter(l => l.type === 'quiz' && l.part === part)
-            .sort((a, b) => a.title.localeCompare(b.title));
+            .sort(window.smartSort); 
+
+        if (filtered.length === 0) {
+            sel.innerHTML = '<option value="">Không có dữ liệu cho Part này</option>';
+            return;
+        }
 
         filtered.forEach(d => {
-            sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.innerText = d.title;
+            sel.appendChild(option);
         });
     };
     window.toggleInfo = (id) => { const p = document.getElementById(id); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; };
@@ -1161,4 +1198,4 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </body>
-</html>
+</html>v
