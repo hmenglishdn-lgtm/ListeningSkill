@@ -192,7 +192,23 @@
     <div id="reg-modal" class="modal"><div class="modal-content"><h3>Đăng Ký</h3><input type="email" id="reg-email" placeholder="Email"><input type="password" id="reg-password" placeholder="Mật khẩu"><button id="confirm-reg-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeReg()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
     <div id="forgot-modal" class="modal"><div class="modal-content"><h3>Quên Mật Khẩu</h3><input type="email" id="forgot-email" placeholder="Email khôi phục"><button id="confirm-forgot-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeForgot()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
     <div id="pass-modal" class="modal"><div class="modal-content"><h3>Đổi Mật Khẩu</h3><input type="password" id="new-password" placeholder="Mật khẩu mới"><button id="confirm-pass-btn" class="btn-main">Cập Nhật</button><button onclick="closePass()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Đóng</button></div></div>
-
+    <div id="result-modal" class="modal">
+        <div class="modal-content" style="
+            text-align: center; 
+            max-width: 400px; 
+            background: rgba(255, 249, 230, 0.85); /* Màu light-yellow nhưng trong suốt 85% */
+            backdrop-filter: blur(10px);           /* Làm mờ hậu cảnh để thấy pháo hoa mờ mờ phía sau */
+            -webkit-backdrop-filter: blur(10px);    /* Hỗ trợ Safari */
+            border: 3px solid var(--accent-yellow);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        ">
+            <div style="font-size: 60px; margin-bottom: 10px;" id="result-icon">🎉</div>
+            <h2 id="result-title" style="color: var(--primary); margin-top: 0;">Tuyệt vời!</h2>
+            <div id="result-stats" style="font-size: 28px; font-weight: bold; margin: 15px 0; color: var(--text-dark);"></div>
+            <p id="result-msg" style="line-height: 1.6; color: var(--text-dark); font-weight: 500;"></p>
+            <button onclick="document.getElementById('result-modal').style.display='none'" class="btn-main" style="margin-top: 15px;">Tiếp tục luyện tập</button>
+        </div>
+    </div> 
     <div class="container">
         <header><img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2FLogo.jpg?alt=media" alt="Logo" style="height: 110px; border-radius: 50%; border: 4px solid var(--accent-yellow); margin-bottom: 10px;"><h1>HAIMAI ENGLISH</h1></header>
 
@@ -228,6 +244,9 @@
                 </div>
                 <div style="display:flex; gap:10px; margin-top:15px;"><select id="level-filter" onchange="filterLessonsByLevel()"><option value="">Cấp độ</option><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><select id="lesson-select" onchange="loadLesson(this.value)"><option value="">Chọn bài</option></select></div>
                 <div id="exercise-area">Hãy chọn bài học...</div>
+                <div id="exercise-area">Hãy chọn bài học...</div>
+                <button id="next-lesson-btn" class="btn-main" style="display:none; background: #00b894; margin: 10px 0;" onclick="loadNextItem('lesson-select')">Câu tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
+                <div id="score-display" style="font-weight:bold; font-size:20px; display:none; margin:15px 0;"></div>
                 <div id="score-display" style="font-weight:bold; font-size:20px; display:none; margin:15px 0;"></div>
                 <button class="btn-main" onclick="checkResults('exercise-area', 'score-display')">Kiểm Tra Đáp Án</button>
                 <button class="btn-main" style="background:#a29bfe;" onclick="toggleInfo('translate-panel')">Dịch Nội Dung</button>
@@ -255,6 +274,7 @@
                 <div id="quiz-image-container" class="quiz-img-container"><img id="quiz-image-display" src=""></div>
                 <div id="quiz-area">Hãy chọn câu hỏi...</div>
                 <div id="quiz-options-container" class="quiz-options"></div>
+                <button id="next-quiz-btn" class="btn-main" style="display:none; background: #00b894; margin: 10px 0;" onclick="loadNextItem('quiz-select')">Câu tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
                 <div id="quiz-score-display" style="font-weight:bold; font-size:20px; margin-top:15px; display:none;"></div>
                 <button class="btn-main" id="quiz-check-btn" style="display:none; margin-top:20px;" onclick="checkResults('quiz-area', 'quiz-score-display', true)">Kiểm Tra Điền Từ</button>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -341,7 +361,7 @@
         </footer>
     </div>
 
-<script type="module">
+    <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -353,7 +373,6 @@
     setPersistence(auth, browserSessionPersistence);
 
     let allLessons = []; let currentEditId = null;
-
     // --- AUTH LOGIC ---
     document.getElementById('login-btn').onclick = async () => {
         const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
@@ -437,6 +456,7 @@
         document.getElementById('translate-panel').innerText = d.translation || "---";
         document.getElementById('vocab-panel').innerText = d.vocabulary || "---";
         document.getElementById('score-display').style.display = 'none';
+        document.getElementById('next-lesson-btn').style.display = 'none';
     };
 
     // --- TAB 2 ---
@@ -455,7 +475,7 @@
         document.getElementById('quiz-translate-panel').innerText = d.translation || "Chưa có bản dịch";
         document.getElementById('quiz-vocab-panel').innerText = d.vocabulary || "Chưa có từ vựng";
         document.getElementById('quiz-score-display').style.display = 'none';
-
+        document.getElementById('next-quiz-btn').style.display = 'none';
         // Xử lý hình ảnh (chỉ dành cho Part 1)
         if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } 
         else { imgCont.style.display = 'none'; }
@@ -600,16 +620,102 @@
         const optCont = isQuiz ? document.getElementById('quiz-options-container') : null;
         let inputs = Array.from(area.querySelectorAll('.blank-input'));
         if (optCont) inputs = inputs.concat(Array.from(optCont.querySelectorAll('.blank-input')));
+        
+        // Nếu bài học không có ô trống nào để điền
+        if (inputs.length === 0) {
+            alert("Bài học này không có phần điền từ!");
+            return;
+        }
+
         let correct = 0;
         inputs.forEach(i => {
             const hint = i.parentNode.querySelector('.correct-hint');
-            if(i.value.trim().toLowerCase() === i.getAttribute('data-ans').toLowerCase()) { i.style.borderColor = "var(--success)"; hint.innerText = ""; correct++; }
-            else { i.style.borderColor = "var(--danger)"; hint.innerText = "✓ " + i.getAttribute('data-ans'); }
+            const userAns = i.value.trim().toLowerCase();
+            const coreAns = i.getAttribute('data-ans').toLowerCase();
+
+            if (userAns === coreAns) {
+                i.style.borderColor = "var(--success)";
+                hint.innerText = "";
+                correct++;
+            } else {
+                i.style.borderColor = "var(--danger)";
+                hint.innerText = "✓ " + i.getAttribute('data-ans');
+            }
         });
-        const sd = document.getElementById(scoreId); sd.style.display = 'block'; sd.innerText = `Kết quả: Đúng ${correct}/${inputs.length}`;
+
+        // Tính toán tỷ lệ phần trăm
+        const scorePercent = (correct / inputs.length) * 100;
+        
+        // Hiển thị điểm nhanh tại chỗ
+        const sd = document.getElementById(scoreId);
+        sd.style.display = 'block';
+        sd.innerText = `Kết quả: Đúng ${correct}/${inputs.length} (${Math.round(scorePercent)}%)`;
         sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // HIỆN NÚT CÂU TIẾP THEO
+        const nextBtnId = isQuiz ? 'next-quiz-btn' : 'next-lesson-btn';
+        document.getElementById(nextBtnId).style.display = 'block';
+
+        sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // HIỂN THỊ BẢNG KẾT QUẢ & PHÁO HOA
+        setTimeout(() => {
+            const modal = document.getElementById('result-modal');
+            const resIcon = document.getElementById('result-icon');
+            const resTitle = document.getElementById('result-title');
+            const resStats = document.getElementById('result-stats');
+            const resMsg = document.getElementById('result-msg');
+
+            resStats.innerText = `Đúng ${correct}/${inputs.length} (${Math.round(scorePercent)}%)`;
+
+            if (scorePercent >= 80) {
+                // Hiệu ứng pháo hoa
+                fireSuccessConfetti();
+                resIcon.innerText = "🏆";
+                resTitle.innerText = "Xuất Sắc!";
+                resTitle.style.color = "var(--success)";
+                resMsg.innerText = "Quá tốt, bạn đang tiến bộ theo từng giờ!";
+            } else {
+                resIcon.innerText = "✍️";
+                resTitle.innerText = "Cố gắng thêm chút nữa!";
+                resTitle.style.color = "var(--primary)";
+                resMsg.innerText = "Bạn gần như đã làm được rồi! Hãy xem lại các lỗi sai màu đỏ và luyện tập lại nhé.";
+            }
+            
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 1500);
+        }, 600); // Đợi 1 chút sau khi kiểm tra xong mới hiện bảng
     };
 
+    // Hàm tạo pháo hoa bắn từ 2 bên màn hình
+    function fireSuccessConfetti() {
+        const end = Date.now() + (3 * 1000); // Chạy trong 3 giây
+        const colors = ['#6c5ce7', '#ffde59', '#00b894'];
+
+        (function frame() {
+            confetti({
+                particleCount: 3,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: colors,
+                zIndex: 3000
+            });
+            confetti({
+                particleCount: 3,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: colors,
+                zIndex: 3000
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
     // --- ADMIN ---
     window.toggleAdminForm = () => {
         const t = document.getElementById('admin-type').value;
@@ -1034,6 +1140,25 @@
         document.getElementById('single-quiz-input').style.display = isGroup ? 'none' : 'block';
         document.getElementById('group-quiz-input').style.display = isGroup ? 'block' : 'none';
     };
+    window.loadNextItem = (selectId) => {
+        const select = document.getElementById(selectId);
+        if (select.selectedIndex < select.options.length - 1) {
+            select.selectedIndex += 1; // Nhảy xuống dòng tiếp theo
+            const nextId = select.value;
+            
+            if (selectId === 'lesson-select') {
+                loadLesson(nextId);
+                document.getElementById('next-lesson-btn').style.display = 'none';
+            } else {
+                loadQuiz(nextId);
+                document.getElementById('next-quiz-btn').style.display = 'none';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            alert("Bạn đã hoàn thành bài cuối cùng trong danh sách này!");
+        }
+    };
 </script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </body>
 </html>
