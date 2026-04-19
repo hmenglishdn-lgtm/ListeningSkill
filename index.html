@@ -460,7 +460,7 @@
         if(d.quizImg) { imgDisp.src = d.quizImg; imgCont.style.display = 'block'; } 
         else { imgCont.style.display = 'none'; }
 
-// KIỂM TRA NẾU LÀ DẠNG NHÓM (PART 3 & 4)
+        // KIỂM TRA NẾU LÀ DẠNG NHÓM (PART 3 & 4)
         if (d.isGroup && d.questions) {
             // 1. Hiển thị hình ảnh
             if(d.quizImg) { 
@@ -571,11 +571,28 @@
             });
         }
 
-        // Kiểm tra ô trống điền từ (cho cả dạng đơn và dạng nhóm)
-        const hasBlanks = d.isGroup 
-            ? d.questions.some(q => q.text.includes('[') || q.optA.includes('['))
-            : (d.question && d.question.includes('[')) || (d.optA && d.optA.includes('['));
+        // Thay thế đoạn kiểm tra hasBlanks cũ bằng đoạn này:
+        const checkBlank = (str) => str && str.includes('[');
+
+        let hasBlanks = false;
+        if (d.isGroup && d.questions) {
+            // Check trong đoạn văn chung (Context)
+            if (checkBlank(d.groupContext)) hasBlanks = true;
             
+            // Check trong từng câu hỏi con và tất cả đáp án A, B, C, D
+            if (!hasBlanks) {
+                hasBlanks = d.questions.some(q => 
+                    checkBlank(q.text) || 
+                    ['optA', 'optB', 'optC', 'optD'].some(key => checkBlank(q[key]))
+                );
+            }
+        } else {
+            // Check cho dạng đơn lẻ (Part 1, 2)
+            hasBlanks = checkBlank(d.question) || 
+                        ['optA', 'optB', 'optC', 'optD'].some(key => checkBlank(d[key]));
+        }
+
+        // Hiển thị nút nếu có bất kỳ ô trống nào
         document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
     };
     window.checkResults = (areaId, scoreId, isQuiz = false) => {
