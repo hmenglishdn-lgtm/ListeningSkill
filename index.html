@@ -419,8 +419,68 @@ window.smartSort = smartSort;
         try { await updatePassword(auth.currentUser, document.getElementById('new-password').value); alert("Xong!"); closePass(); showTab(null, 'study'); } catch(e) { alert("Vui lòng đăng nhập lại!"); }
     };
     document.getElementById('confirm-reg-btn').onclick = async () => {
-        const e = document.getElementById('reg-email').value, p = document.getElementById('reg-password').value;
-        try { const uc = await createUserWithEmailAndPassword(auth, e, p); await setDoc(doc(db, "users", uc.user.uid), { email: e, role: "student", status: "pending", createdAt: new Date().getTime(), startDate: null }); alert("Chờ duyệt!"); await signOut(auth); closeReg(); } catch(err) { alert(err.message); }
+        const e = document.getElementById('reg-email').value.trim();
+        const p = document.getElementById('reg-password').value.trim();
+        const btn = document.getElementById('confirm-reg-btn');
+        
+        if(!e || !p) { 
+            alert("Vui lòng nhập đầy đủ thông tin!"); 
+            return; 
+        }
+
+        try {
+            btn.innerText = "⏳ Đang gửi...";
+            btn.disabled = true;
+
+            // 1. Tạo tài khoản Auth
+            const uc = await createUserWithEmailAndPassword(auth, e, p);
+            const uid = uc.user.uid;
+
+            // 2. HIỂN THỊ THÔNG BÁO NGAY (Để người dùng thấy kết quả trước)
+            document.getElementById('reg-modal').style.display = 'none';
+            const resModal = document.getElementById('result-modal');
+            document.getElementById('result-icon').innerText = "⏳";
+            document.getElementById('result-title').innerText = "Đã nhận yêu cầu!";
+            document.getElementById('result-stats').innerText = "";
+            document.getElementById('result-msg').innerHTML = "Đã nhận yêu cầu, chờ mấy thầy duyệt nhé :D";
+            resModal.style.display = 'block';
+
+            // 3. Ghi vào Firestore (Dùng try-catch riêng để nếu lỗi DB vẫn không làm treo giao diện)
+            try {
+                await setDoc(doc(db, "users", uid), { 
+                    email: e, 
+                    role: "student", 
+                    status: "pending", 
+                    createdAt: new Date().getTime(), 
+                    startDate: null 
+                });
+                console.log("Firestore đã ghi nhận user mới.");
+            } catch (dbErr) {
+                console.error("Lỗi Firestore:", dbErr);
+            }
+
+            // 4. Đăng xuất và dọn dẹp sau 3 giây
+            setTimeout(async () => {
+                await signOut(auth);
+                resModal.style.display = 'none';
+                document.getElementById('reg-email').value = "";
+                document.getElementById('reg-password').value = "";
+                btn.innerText = "Gửi Yêu Cầu";
+                btn.disabled = false;
+                // Buộc quay lại màn hình login
+                document.getElementById('auth-screen').style.display = 'block';
+                document.getElementById('main-app').style.display = 'none';
+            }, 3000);
+
+        } catch(err) { 
+            btn.innerText = "Gửi Yêu Cầu";
+            btn.disabled = false;
+            if (err.code === 'auth/email-already-in-use') {
+                alert("Email này đã tồn tại! Vui lòng dùng email khác.");
+            } else {
+                alert("Lỗi: " + err.message);
+            }
+        }
     };
     document.getElementById('confirm-forgot-btn').onclick = async () => {
         try { await sendPasswordResetEmail(auth, document.getElementById('forgot-email').value); alert("Link đã gửi vào Email!"); closeForgot(); } catch(err) { alert(err.message); }
