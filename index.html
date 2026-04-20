@@ -1071,30 +1071,60 @@ window.smartSort = smartSort;
     async function fetchAdminData() {
         const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
         const pList = document.getElementById('pending-users-list'), fRows = document.getElementById('full-user-rows');
-        pList.innerHTML = "<h4>Yêu cầu phê duyệt</h4>"; fRows.innerHTML = ""; let count = 1;
+        
+        // Cập nhật tiêu đề bảng (Thêm cột Thao tác)
+        const tableHead = document.querySelector(".user-table theater tr");
+        if (tableHead && !tableHead.innerHTML.includes("Thao tác")) {
+            tableHead.innerHTML += "<th>Thao tác</th>";
+        }
+
+        pList.innerHTML = "<h4>Yêu cầu phê duyệt</h4>"; 
+        fRows.innerHTML = ""; 
+        let count = 1;
         
         snap.forEach(d => {
-            const u = d.data(); if(u.email === ADMIN_EMAIL) return;
+            const u = d.data(); 
+            if(u.email === ADMIN_EMAIL) return;
             
-            const lastSeenStr = u.lastSeen ? new Date(u.lastSeen).toLocaleString('vi-VN', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }) : '---';
+            const lastSeenStr = u.lastSeen ? new Date(u.lastSeen).toLocaleString('vi-VN') : '---';
 
-            if(u.status === 'pending') pList.innerHTML += `<div style="background:white; padding:10px; margin-top:5px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;"><span>${u.email}</span><button class="admin-list-btn" onclick="manageU('${d.id}')" style="background:var(--success); color:white;">Duyệt</button></div>`;
+            // Danh sách chờ duyệt
+            if(u.status === 'pending') {
+                pList.innerHTML += `
+                <div style="background:white; padding:10px; margin-top:5px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--accent-yellow);">
+                    <span>${u.email}</span>
+                    <button class="admin-list-btn" onclick="manageU('${d.id}')" style="background:var(--success); color:white;">Duyệt</button>
+                </div>`;
+            }
             
+            // Danh sách tất cả học viên
             fRows.innerHTML += `<tr>
                 <td>${count++}</td>
                 <td>${u.email}</td>
                 <td>${u.startDate ? new Date(u.startDate).toLocaleDateString('vi-VN') : '---'}</td>
                 <td>${u.expiryDate ? new Date(u.expiryDate).toLocaleDateString('vi-VN') : '---'}</td>
                 <td style="font-size:12px; color:#555;">${lastSeenStr}</td>
-                <td>${u.status === 'approved' ? 'Đang học' : 'Chờ'}</td>
+                <td>${u.status === 'approved' ? '✅ Đang học' : '⏳ Chờ'}</td>
+                <td>
+                    <button onclick="deleteUserRecord('${d.id}', '${u.email}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
             </tr>`;
         });
     }
     window.manageU = async (id) => { const now = new Date().getTime(); await updateDoc(doc(db, "users", id), { status: "approved", startDate: now, expiryDate: now + (180*24*60*60*1000) }); alert("Đã duyệt!"); fetchAdminData(); };
-
+    window.deleteUserRecord = async (id, email) => {
+        if(confirm(`Bạn có chắc muốn xóa hồ sơ của học viên ${email} khỏi danh sách không?\n(Lưu ý: Bạn cũng cần xóa email này trong mục Authentication của Firebase nếu muốn họ không đăng nhập được nữa)`)) {
+            try {
+                await deleteDoc(doc(db, "users", id));
+                alert("Đã xóa hồ sơ thành công!");
+                fetchAdminData(); // Tải lại danh sách
+            } catch (err) {
+                alert("Lỗi khi xóa: " + err.message);
+            }
+        }
+    };
     // --- COMMON ---
     window.showTab = (e, id) => { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.querySelectorAll('.tab-nav .btn-main').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; if(e) e.currentTarget.classList.add('active'); else document.getElementById('tab-study-btn').classList.add('active'); };
     window.filterLessonsByLevel = () => {
