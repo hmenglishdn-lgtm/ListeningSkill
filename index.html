@@ -206,7 +206,7 @@
             <h2 id="result-title" style="color: var(--primary); margin-top: 0;">Tuyệt vời!</h2>
             <div id="result-stats" style="font-size: 28px; font-weight: bold; margin: 15px 0; color: var(--text-dark);"></div>
             <p id="result-msg" style="line-height: 1.6; color: var(--text-dark); font-weight: 500;"></p>
-            <button onclick="document.getElementById('result-modal').style.display='none'" class="btn-main" style="margin-top: 15px;">Tiếp tục luyện tập</button>
+            <button onclick="document.getElementById('result-modal').style.display='none'" class="btn-main" style="margin-top: 15px;">yes sir!!! đã rõ</button>
         </div>
     </div> 
     <div class="container">
@@ -470,13 +470,13 @@ window.smartSort = smartSort;
                 // Buộc quay lại màn hình login
                 document.getElementById('auth-screen').style.display = 'block';
                 document.getElementById('main-app').style.display = 'none';
-            }, 3000);
+            }, 4000);
 
         } catch(err) { 
             btn.innerText = "Gửi Yêu Cầu";
             btn.disabled = false;
             if (err.code === 'auth/email-already-in-use') {
-                alert("Email này đã tồn tại! Vui lòng dùng email khác.");
+                alert("Email này có rồi nhé, đợi mấy thầy duyệt nhé.");
             } else {
                 alert("Lỗi: " + err.message);
             }
@@ -489,20 +489,34 @@ window.smartSort = smartSort;
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
-                // Phải lấy userRef trước để dùng cho cả getDoc và updateDoc
                 const userRef = doc(db, "users", user.uid); 
                 const snap = await getDoc(userRef);
                 
                 if (!snap.exists()) return;
                 const uData = snap.data();
                 
-                // Nếu đang chờ duyệt thì bắt đăng xuất
-                if (uData.status === "pending") return signOut(auth);
+                // --- TRƯỜNG HỢP CHƯA ĐƯỢC DUYỆT ---
+                if (uData.status === "pending") {
+                    // 1. Hiện thông báo bằng Result Modal
+                    const resModal = document.getElementById('result-modal');
+                    document.getElementById('result-icon').innerText = "👨‍🏫";
+                    document.getElementById('result-title').innerText = "Vui lòng chờ chút!";
+                    document.getElementById('result-stats').innerText = "";
+                    document.getElementById('result-msg').innerHTML = "Mấy thầy đang bận dạy, báo lên nhóm nhé :D";
+                    
+                    resModal.style.display = 'block';
 
-                // CẬP NHẬT LAST SEEN: Chạy cho cả user cũ và mới ngay khi họ vào App
+                    // 2. Sau 3 giây mới đăng xuất và đóng bảng
+                    setTimeout(async () => {
+                        resModal.style.display = 'none';
+                        await signOut(auth);
+                    }, 3000);
+                    return; // Thoát hàm, không chạy các lệnh bên dưới
+                }
+
+                // --- TRƯỜNG HỢP ĐÃ DUYỆT (Giữ nguyên logic cũ của bạn) ---
                 await updateDoc(userRef, { lastSeen: new Date().getTime() });
 
-                // Hiển thị giao diện chính
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
                 document.getElementById('menu-trigger').style.display = 'flex';
@@ -511,16 +525,15 @@ window.smartSort = smartSort;
                 
                 if (user.email === ADMIN_EMAIL) {
                     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
-                    fetchAdminData(); // Admin vào là thấy danh sách học viên cập nhật ngay
+                    fetchAdminData();
                 }
-                
                 fetchLessons();
+
             } catch (error) {
                 console.error("Lỗi xác thực:", error);
-                // Nếu có lỗi (ví dụ chưa import updateDoc), vẫn cho Admin thấy lỗi để sửa
-                if (user.email === ADMIN_EMAIL) alert("Lỗi cập nhật dữ liệu: " + error.message);
             }
         } else {
+            // Khi logout hoặc chưa login
             document.getElementById('auth-screen').style.display = 'block'; 
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('menu-trigger').style.display = 'none';
