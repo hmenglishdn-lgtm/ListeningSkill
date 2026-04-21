@@ -204,6 +204,57 @@
             border-color: var(--primary);
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
+        /* Khung chứa cho mỗi câu hỏi con trong Part 3, 4 */
+        .quiz-group-item {
+            background: white;
+            border: 1px solid #e0d0a0;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex; /* Sử dụng flex để chia cột */
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Cột bên trái: Câu hỏi (Đã chỉnh nền trắng và chữ Bold) */
+        .quiz-group-question {
+            flex: 1; 
+            padding: 20px;
+            background: #ffffff;      /* Đổi từ vàng nhạt sang trắng hoàn toàn */
+            font-weight: 700;         /* Chữ in đậm Bold */
+            color: var(--text-dark);
+            border-right: 2px solid var(--accent-yellow); /* Vạch dọc màu vàng */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 16px;          /* Có thể điều chỉnh cỡ chữ cho rõ hơn */
+        }
+
+        /* Đảm bảo các thành phần bên trong cũng in đậm */
+        .quiz-group-question div, 
+        .quiz-group-question span {
+            font-weight: 700 !important;
+        }
+        /* Cột bên phải: Danh sách đáp án */
+        .quiz-group-options {
+            flex: 1.5; /* Chiếm nhiều không gian hơn cho đáp án */
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr; /* Đáp án xếp chồng lên nhau trong khung này */
+            gap: 10px;
+        }
+
+        /* Điều chỉnh lại nút đáp án bên trong khung này */
+        .quiz-group-options .option-btn {
+            margin-top: 0;
+            padding: 10px 15px;
+            font-size: 15px;
+        }
+
+        /* Responsive cho điện thoại: Chuyển dọc nếu màn hình nhỏ */
+        @media (max-width: 600px) {
+            .quiz-group-item { flex-direction: column; }
+            .quiz-group-question { border-right: none; border-bottom: 2px solid var(--accent-yellow); }
+        }
     </style>
 </head>
 <body>
@@ -610,8 +661,9 @@ window.smartSort = smartSort;
         const quizArea = document.getElementById('quiz-area');
         const container = document.getElementById('quiz-options-container');
         
-        // Reset giao diện
+        // --- BƯỚC 1: RESET GIAO DIỆN ---
         container.innerHTML = "";
+        quizArea.innerHTML = ""; // Xóa sạch đề bài cũ
         document.getElementById('quiz-translate-panel').style.display = 'none';
         document.getElementById('quiz-vocab-panel').style.display = 'none';
         document.getElementById('quiz-translate-panel').innerText = d.translation || "Chưa có bản dịch";
@@ -619,12 +671,10 @@ window.smartSort = smartSort;
         document.getElementById('quiz-score-display').style.display = 'none';
         document.getElementById('next-quiz-btn').style.display = 'none';
 
-        // --- XỬ LÝ HIỂN THỊ THEO THỨ TỰ MỚI ---
-
-        // 1. Hiển thị Đề bài/Đoạn văn chung TRƯỚC (Đối với Part 3, 4 hoặc Part 2)
+        // --- BƯỚC 2: HIỂN THỊ ĐỀ BÀI CHUNG / HÌNH ẢNH ---
         if (d.isGroup && d.questions) {
             quizArea.style.display = 'block';
-            quizArea.innerHTML = d.groupContext ? parseTextWithBlanks(d.groupContext) : "Nghe và trả lời 3 câu hỏi:";
+            quizArea.innerHTML = d.groupContext ? parseTextWithBlanks(d.groupContext) : "Nghe và trả lời các câu hỏi sau:";
         } else {
             if (d.part === 'Part1') {
                 quizArea.style.display = 'none'; 
@@ -634,64 +684,68 @@ window.smartSort = smartSort;
             }
         }
 
-        // 2. Hiển thị Hình ảnh NGAY DƯỚI đề bài (Chèn vào giữa đề bài và câu hỏi)
         if(d.quizImg) { 
             imgDisp.src = d.quizImg; 
             imgCont.style.display = 'block'; 
-            imgCont.style.margin = "15px auto"; // Căn giữa và tạo khoảng cách
+            imgCont.style.margin = "15px auto";
         } else { 
             imgCont.style.display = 'none'; 
         }
 
-        // 3. Hiển thị các Câu hỏi con và Đáp án
+        // --- BƯỚC 3: HIỂN THỊ CÂU HỎI & ĐÁP ÁN (FIX LẶP TẠI ĐÂY) ---
         if (d.isGroup && d.questions) {
+            // CHỈ CHẠY 1 VÒNG LẶP DUY NHẤT CHO DẠNG NHÓM (PART 3, 4)
             d.questions.forEach((q, qIdx) => {
-                const qDiv = document.createElement('div');
-                qDiv.style = "margin-top:25px; font-weight:bold; border-left:4px solid var(--primary); padding-left:10px; text-align:left; color: var(--text-dark);";
-                qDiv.innerHTML = `Câu ${qIdx + 1}: ${parseTextWithBlanks(q.text)}`;
-                container.appendChild(qDiv);
+                const groupItem = document.createElement('div');
+                groupItem.className = 'quiz-group-item';
 
-                const optGrid = document.createElement('div');
-                optGrid.className = 'quiz-options';
-                optGrid.style = "margin-bottom:15px; margin-top:10px;";
+                const qSide = document.createElement('div');
+                qSide.className = 'quiz-group-question';
+                qSide.innerHTML = `<div>Câu ${qIdx + 1}: ${parseTextWithBlanks(q.text)}</div>`;
+                
+                if (q.qTranslate) {
+                    const transBtn = document.createElement('small');
+                    transBtn.style = "color:var(--primary); cursor:pointer; text-decoration:underline; margin-top:10px; display:block; font-weight:normal;";
+                    transBtn.innerText = "Xem dịch câu hỏi";
+                    const transText = document.createElement('div');
+                    transText.style = "display:none; font-weight:normal; font-size:13px; margin-top:5px; color:#666; font-style:italic;";
+                    transText.innerText = q.qTranslate;
+                    transBtn.onclick = () => transText.style.display = transText.style.display === 'none' ? 'block' : 'none';
+                    qSide.appendChild(transBtn);
+                    qSide.appendChild(transText);
+                }
+
+                const optSide = document.createElement('div');
+                optSide.className = 'quiz-group-options';
 
                 ['A','B','C','D'].forEach(o => {
                     const optContent = q['opt'+o];
                     if(optContent) {
                         const btn = document.createElement('button');
                         btn.className = 'option-btn';
-                        btn.innerHTML = `${o}. ${parseTextWithBlanks(optContent)}`;
+                        btn.innerHTML = `<b>${o}.</b> ${parseTextWithBlanks(optContent)}`;
                         btn.onclick = (e) => {
                             if(e.target.tagName === 'INPUT') return;
-                            optGrid.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                            optSide.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
                             btn.classList.add('selected');
                             if(o === q.correct) btn.classList.add('correct');
                             else {
                                 btn.classList.add('wrong');
-                                Array.from(optGrid.querySelectorAll('.option-btn')).forEach(b => {
-                                    if(b.innerHTML.trim().startsWith(q.correct + '.')) b.classList.add('correct');
+                                Array.from(optSide.querySelectorAll('.option-btn')).forEach(b => {
+                                    if(b.innerHTML.includes(`<b>${q.correct}.</b>`)) b.classList.add('correct');
                                 });
                             }
                         };
-                        optGrid.appendChild(btn);
+                        optSide.appendChild(btn);
                     }
                 });
-                container.appendChild(optGrid);
 
-                if (q.qTranslate) {
-                    const transBtn = document.createElement('button');
-                    transBtn.innerHTML = '<i class="fa-solid fa-language"></i> Xem dịch câu ' + (qIdx + 1);
-                    transBtn.style = "background:none; border:none; color:var(--primary); cursor:pointer; font-size:12px; display:block; text-align:left; margin-top:5px; margin-bottom:15px; text-decoration:underline;";
-                    const transDiv = document.createElement('div');
-                    transDiv.style = "display:none; font-size:13px; color:#666; font-style:italic; padding:8px; background:#f9f9f9; border-radius:8px; margin-bottom:15px; border:1px solid #eee;";
-                    transDiv.innerText = q.qTranslate;
-                    transBtn.onclick = () => transDiv.style.display = transDiv.style.display === 'none' ? 'block' : 'none';
-                    container.appendChild(transBtn);
-                    container.appendChild(transDiv);
-                }
+                groupItem.appendChild(qSide);
+                groupItem.appendChild(optSide);
+                container.appendChild(groupItem);
             });
         } else {
-            // Dạng đơn lẻ (Part 1, 2)
+            // DẠNG ĐƠN LẺ (PART 1, 2)
             const opts = (d.part === 'Part2') ? ['A','B','C'] : ['A','B','C','D'];
             opts.forEach(o => {
                 if(d['opt'+o]) {
@@ -705,7 +759,11 @@ window.smartSort = smartSort;
                         if(o === d.correct) btn.classList.add('correct'); 
                         else {
                             btn.classList.add('wrong');
-                            container.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(d.correct)) b.classList.add('correct'); });
+                            container.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(o)) b.classList.add('correct'); });
+                            // Fix lỗi hiển thị đáp án đúng cho câu đơn
+                            container.querySelectorAll('.option-btn').forEach(b => {
+                                if(b.innerHTML.trim().startsWith(d.correct + '.')) b.classList.add('correct');
+                            });
                         }
                     };
                     container.appendChild(btn);
@@ -713,7 +771,7 @@ window.smartSort = smartSort;
             });
         }
 
-        // Logic ẩn hiện nút kiểm tra điền từ
+        // --- BƯỚC 4: LOGIC KIỂM TRA ĐIỀN TỪ ---
         const checkBlank = (str) => str && str.includes('[');
         let hasBlanks = false;
         if (d.isGroup && d.questions) {
