@@ -54,10 +54,50 @@
             border: 1px solid #e0d0a0; text-align: left; margin: 20px 0; min-height: 100px;
             white-space: pre-wrap; word-wrap: break-word;
         }
-        .blank-wrapper { display: inline-block; vertical-align: middle; margin: 0 8px; text-align: center; position: relative; line-height: 1.2; }
-        .blank-input { width: auto; background: #fff; border: 2px solid var(--accent-yellow); border-radius: 8px; padding: 4px 8px; font-weight: bold; color: var(--primary); text-align: center; font-size: 18px; outline: none; transition: 0.3s; }
-        .correct-hint { font-size: 13px; color: #27ae60; font-weight: bold; display: block; margin-top: 2px; height: 15px; }
+        .blank-wrapper { 
+            display: inline-flex;     /* Thay đổi sang inline-flex để dễ căn chỉnh */
+            flex-direction: column;    /* Xếp dọc: input trên, hint dưới */
+            align-items: center;      /* Căn giữa theo chiều ngang */
+            vertical-align: middle; 
+            margin: 0 4px;            /* Khoảng cách giữa các cụm từ điền */
+            position: relative;
+            line-height: 1;
+        }
+        .blank-input { 
+            width: auto; 
+            background: #fff; 
+            border: 2px solid var(--accent-yellow); 
+            border-radius: 8px; 
+            padding: 4px 8px; 
+            font-weight: bold; 
+            color: var(--primary); 
+            text-align: center; 
+            font-size: 18px; 
+            outline: none; 
+            margin-bottom: 2px;       /* Khoảng cách cực nhỏ với ô đáp án bên dưới */
+        }
+        .correct-hint { 
+            font-size: 12px;          /* Nhỏ lại một chút cho tinh tế */
+            color: white; 
+            padding: 1px 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            display: none;            /* Mặc định ẩn */
+            white-space: nowrap;      /* Không cho xuống hàng */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 16px;         /* Giữ chỗ để không bị nhảy giao diện */
+        }
+        /* Màu xanh khi đúng */
+        .hint-correct {
+            background: #00b894; 
+            display: inline-block !important;
+        }
 
+        /* Màu xám khi sai */
+        .hint-wrong {
+            background: #7f8c8d; 
+            display: inline-block !important;
+        } 
         .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         .option-btn { background: white; border: 2px solid #e0d0a0; padding: 15px; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; text-align: left; white-space: pre-wrap; }
         .option-btn:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -702,16 +742,22 @@ window.smartSort = smartSort;
             const userAns = i.value.trim().toLowerCase();
             const coreAns = i.getAttribute('data-ans').toLowerCase();
 
+            // Reset các class cũ
+            hint.classList.remove('hint-correct', 'hint-wrong');
+
             if (userAns === coreAns) {
+                // TRƯỜNG HỢP ĐÚNG
                 i.style.borderColor = "var(--success)";
-                hint.innerText = "";
+                hint.innerHTML = '<i class="fa-solid fa-check"></i>'; // Chỉ hiện icon tick
+                hint.classList.add('hint-correct');
                 correct++;
             } else {
+                // TRƯỜNG HỢP SAI
                 i.style.borderColor = "var(--danger)";
-                hint.innerText = "✓ " + i.getAttribute('data-ans');
+                hint.innerText = "✓ " + i.getAttribute('data-ans'); // Hiện đáp án đúng
+                hint.classList.add('hint-wrong');
             }
         });
-
         // Tính toán tỷ lệ phần trăm
         const scorePercent = (correct / inputs.length) * 100;
         
