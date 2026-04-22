@@ -925,36 +925,56 @@
         };
         document.addEventListener('mouseup', async (e) => {
             const tooltip = document.getElementById('translation-tooltip');
-            const selectedText = window.getSelection().toString().trim();
+            const selection = window.getSelection();
+            let selectedText = selection.toString().trim();
 
-            // Nếu không có văn bản nào được chọn hoặc bôi đen quá ngắn thì ẩn tooltip
+            // --- LOGIC MỚI: KIỂM TRA NẾU BÔI ĐEN CHỨA Ô INPUT ---
+            const range = selection.getRangeAt(0);
+            const fragment = range.cloneContents();
+            const inputs = fragment.querySelectorAll('input');
+
+            if (inputs.length > 0) {
+                // Nếu có ô input trong vùng bôi đen, ta sẽ lấy đáp án đúng thay vì nội dung học sinh gõ
+                let fullText = "";
+                const container = document.createElement('div');
+                container.appendChild(fragment);
+                
+                // Duyệt qua các node để giữ đúng thứ tự văn bản
+                const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
+                let node;
+                while(node = walker.nextNode()) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        fullText += node.textContent;
+                    } else if (node.tagName === 'INPUT') {
+                        // Lấy đáp án đúng từ thuộc tính data-ans (cần tìm đúng input trong DOM thật)
+                        const realInput = document.querySelector(`input[data-ans="${node.getAttribute('data-ans')}"]`);
+                        fullText += ` ${node.getAttribute('data-ans')} `;
+                    }
+                }
+                selectedText = fullText.replace(/\s+/g, ' ').trim();
+            }
+
             if (!selectedText || selectedText.length < 2) {
                 tooltip.style.display = 'none';
                 return;
             }
 
-            // Hiển thị trạng thái đang dịch
+            // Hiển thị tooltip và gọi API dịch (Giữ nguyên logic dịch cũ của bạn)
             tooltip.innerText = "⏳ Đang dịch...";
             tooltip.style.display = 'block';
-            tooltip.style.left = `${e.pageX - (tooltip.offsetWidth / 2)}px`;
-            tooltip.style.top = `${e.pageY - tooltip.offsetHeight - 20}px`;
+            // Căn chỉnh vị trí Tooltip
+            tooltip.style.left = `${Math.min(window.innerWidth - 150, Math.max(10, e.pageX - 75))}px`;
+            tooltip.style.top = `${e.pageY - 60}px`;
 
             try {
-                // Sử dụng API dịch thuật miễn phí
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURI(selectedText)}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 const translatedText = result[0][0][0];
 
-                // Cập nhật nội dung dịch vào tooltip
                 tooltip.innerText = translatedText;
-                
-                // Căn chỉnh lại vị trí sau khi có nội dung mới
-                tooltip.style.left = `${e.pageX - (tooltip.offsetWidth / 2)}px`;
-                tooltip.style.top = `${e.pageY - tooltip.offsetHeight - 20}px`;
             } catch (error) {
-                tooltip.innerText = "❌ Lỗi dịch thuật";
-                console.error("Lỗi:", error);
+                tooltip.innerText = "❌ Lỗi dịch";
             }
         });
 
