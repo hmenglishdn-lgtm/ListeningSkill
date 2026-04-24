@@ -1782,15 +1782,64 @@
 
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
-            
-            // Nếu đã trả lời hết số từ
             if (currentQIndex >= quizWords.length) {
+                const percent = Math.round((quizScore / quizWords.length) * 100);
+                let icon = "🏆";
+                let title = "Hoàn thành!";
+                let message = "";
+                let color = "var(--primary)";
+
+                // 1. Phân loại lời khen theo điểm số
+                if (percent === 100) {
+                    icon = "👑";
+                    title = "Bén Như Cái Chén!";
+                    message = "Nỗ lực hết mình vì mục tiêu nhé.";
+                    color = "var(--success)"; // Xanh lá
+                    // Bắn pháo hoa ăn mừng
+                    if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
+                } else if (percent >= 70) {
+                    icon = "🔥";
+                    title = "Xuất sắc!";
+                    message = "Tiếp tục phát huy nhé!";
+                    color = "#f39c12"; // Cam vàng
+                    if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, zIndex: 9999 });
+                } else {
+                    icon = "💪";
+                    title = "Cố Lên Nào!";
+                    message = "Ôn lại vài lần là nhớ ngay!";
+                    color = "var(--danger)"; // Đỏ
+                }
+
+                // 2. Render giao diện hoành tráng
                 area.innerHTML = `
-                    <div style="text-align: center; padding: 20px 0;">
-                        <div style="font-size: 50px; margin-bottom: 10px;">🏆</div>
-                        <h2 style="color: var(--primary);">Hoàn thành!</h2>
-                        <p style="font-size: 18px;">Bạn đúng <b>${quizScore}/${quizWords.length}</b> câu.</p>
-                    </div>`;
+                    <div style="text-align: center; padding: 20px 0; animation: fadeIn 0.6s;">
+                        <div style="font-size: 75px; margin-bottom: 10px; animation: bounceIcon 1s infinite alternate;">${icon}</div>
+                        <h2 style="color: ${color}; font-size: 26px; margin: 0 0 15px 0;">${title}</h2>
+                        
+                        <div style="display: inline-block; background: #f8f9fa; padding: 15px 25px; border-radius: 20px; border: 2px dashed ${color}; margin-bottom: 20px;">
+                            <div style="font-size: 16px; color: #555; margin-bottom: 5px;">Thành tích của bạn</div>
+                            <div style="font-size: 28px; font-weight: bold; color: var(--text-dark);">Đúng ${quizScore} / ${quizWords.length}</div>
+                        </div>
+                        
+                        <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.5; padding: 0 10px;">${message}</p>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="startVocabQuiz()" class="btn-main" style="background: var(--success); width: auto; padding: 12px 25px;">🔄 Chơi Lại</button>
+                            <button onclick="document.getElementById('vocab-quiz-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark); width: auto; padding: 12px 25px;">Đóng</button>
+                        </div>
+                    </div>
+
+                    <style>
+                        @keyframes bounceIcon { from { transform: translateY(0) scale(1); } to { transform: translateY(-15px) scale(1.1); } }
+                        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+                    </style>
+                `;
+
+                // Ẩn cái nút "Dừng Ôn Tập" mặc định ở dưới cùng đi để không bị trùng lặp
+                const defaultCloseBtn = area.parentElement.querySelector('button:last-child');
+                if (defaultCloseBtn && defaultCloseBtn.innerText === "Dừng Ôn Tập") {
+                    defaultCloseBtn.style.display = 'none';
+                }
                 return;
             }
 
