@@ -318,6 +318,21 @@
             font-style: italic;
             margin-right: 5px !important;
         }
+        /* --- LÀM ĐẸP THANH CUỘN CHO SỔ TAY --- */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px; /* Làm thanh cuộn nhỏ lại cho tinh tế */
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--accent-yellow); /* Màu vàng hợp tông app */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--primary); /* Đổi sang màu tím khi rê chuột vào */
+        }
     </style>
 </head>
 <body>
@@ -1608,10 +1623,24 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <div id="notebook-modal" class="modal">
-        <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
-            <h3 style="color: var(--primary); border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px;">📔 Sổ Tay Của Tôi</h3>
-            <div id="notebook-list" style="text-align: left; margin-top: 15px;"></div>
-            <button onclick="document.getElementById('notebook-modal').style.display='none'" class="btn-main" style="margin-top: 20px;">Đóng</button>
+        <div class="modal-content" style="max-width: 500px; padding: 25px;">
+            <h3 style="color: var(--primary); border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px; margin-top: 0;">📔 Sổ Tay Của Tôi</h3>
+            
+            <div id="notebook-list" class="custom-scrollbar" style="text-align: left; margin-top: 15px; max-height: 55vh; overflow-y: auto; padding-right: 10px;">
+                </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="startVocabQuiz()" class="btn-main" style="background: var(--success); flex: 1; margin: 0;">🚀 Ôn Tập Siêu Tốc</button>
+                <button onclick="document.getElementById('notebook-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark); flex: 1; margin: 0;">Đóng</button>
+            </div>
+        </div>
+    </div>
+    <div id="vocab-quiz-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <h3 style="color: var(--primary); margin-top: 0;">🚀 Ôn Tập Siêu Tốc</h3>
+            <div id="vocab-quiz-area" style="margin: 20px 0; text-align: left;">
+                </div>
+            <button onclick="document.getElementById('vocab-quiz-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark);">Dừng Ôn Tập</button>
         </div>
     </div>
 
@@ -1724,6 +1753,95 @@
             
             // ĐÃ THAY ALERT BẰNG TOAST
             showBeautifulToast(`Đã lưu "${word}" vào sổ tay!`, "success");
+        };
+            // --- TÍNH NĂNG QUIZ TỪ VỰNG SIÊU TỐC ---
+        let quizWords = [];
+        let currentQIndex = 0;
+        let quizScore = 0;
+
+        window.startVocabQuiz = () => {
+            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+            
+            // Điều kiện: Phải có ít nhất 4 từ mới tạo được 4 đáp án trắc nghiệm (A,B,C,D)
+            if (notebook.length < 4) {
+                showBeautifulToast("Hãy lưu ít nhất 4 từ vựng để bắt đầu chơi nhé!", "warning");
+                return;
+            }
+
+            // Trộn ngẫu nhiên danh sách từ và lấy tối đa 10 từ để ôn 1 lần
+            quizWords = notebook.sort(() => 0.5 - Math.random()).slice(0, 10);
+            currentQIndex = 0;
+            quizScore = 0;
+
+            // Đóng bảng sổ tay, mở bảng Quiz
+            document.getElementById('notebook-modal').style.display = 'none';
+            document.getElementById('vocab-quiz-modal').style.display = 'block';
+
+            renderVocabQuestion();
+        };
+
+        window.renderVocabQuestion = () => {
+            const area = document.getElementById('vocab-quiz-area');
+            
+            // Nếu đã trả lời hết số từ
+            if (currentQIndex >= quizWords.length) {
+                area.innerHTML = `
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 50px; margin-bottom: 10px;">🏆</div>
+                        <h2 style="color: var(--primary);">Hoàn thành!</h2>
+                        <p style="font-size: 18px;">Bạn đúng <b>${quizScore}/${quizWords.length}</b> câu.</p>
+                    </div>`;
+                return;
+            }
+
+            const currentWord = quizWords[currentQIndex];
+            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+            
+            // Lấy 3 đáp án sai ngẫu nhiên từ sổ tay
+            let distractors = notebook
+                .filter(w => w.word !== currentWord.word) // Loại đáp án đúng ra
+                .sort(() => 0.5 - Math.random()) // Trộn ngẫu nhiên
+                .slice(0, 3); // Cắt lấy 3 cái
+                
+            // Gộp đáp án đúng và 3 đáp án sai, sau đó trộn vị trí A B C D
+            let options = [currentWord, ...distractors].sort(() => 0.5 - Math.random());
+
+            area.innerHTML = `
+                <div style="font-weight: bold; font-size: 20px; margin-bottom: 20px; text-align: center;">
+                    Từ <span style="color: var(--primary); font-size: 26px;">"${currentWord.word}"</span> có nghĩa là gì?
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${options.map(opt => `
+                        <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word}', '${currentWord.word}')">
+                            ${opt.meaning}
+                        </button>
+                    `).join('')}
+                </div>
+                <p style="text-align: right; margin-top: 15px; font-size: 14px; color: #999;">Câu ${currentQIndex + 1} / ${quizWords.length}</p>
+            `;
+        };
+
+        window.checkVocabAnswer = (btnElement, selectedWord, correctWord) => {
+            // Vô hiệu hóa tất cả các nút để không bấm 2 lần
+            const buttons = document.querySelectorAll('#vocab-quiz-area .option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedWord === correctWord) {
+                btnElement.style.background = "var(--success)";
+                btnElement.style.color = "white";
+                btnElement.style.borderColor = "var(--success)";
+                showBeautifulToast("Quá Chuẩn Em nhé!", "success");
+                quizScore++;
+            } else {
+                btnElement.style.background = "var(--danger)";
+                btnElement.style.color = "white";
+                btnElement.style.borderColor = "var(--danger)";
+                showBeautifulToast(`❌ Sai rồi! Đáp án đúng của ${correctWord} là cái khác.`, "warning");
+            }
+            
+            currentQIndex++;
+            // Đợi 1 giây để học viên xem màu đáp án rồi mới chuyển câu
+            setTimeout(renderVocabQuestion, 1000);
         };
     </script>
 </body>
