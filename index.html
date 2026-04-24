@@ -981,33 +981,47 @@
             if (tooltip.contains(e.target)) {
                 return;
             }
-            const selection = window.getSelection();
-            
-            if (selection.rangeCount === 0) return;
 
-            const range = selection.getRangeAt(0);
-            const container = document.createElement('div');
-            container.appendChild(range.cloneContents());
+            let selectedText = "";
 
-            // Loại bỏ nhãn đáp án
-            const hints = container.querySelectorAll('.correct-hint');
-            hints.forEach(h => h.remove());
+            // === 1. PHẦN MỚI THÊM: Nếu quét chữ bên trong ô Input ===
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                const input = e.target;
+                if (input.selectionStart !== input.selectionEnd) {
+                    selectedText = input.value.substring(input.selectionStart, input.selectionEnd).trim();
+                }
+            } 
+            // === 2. PHẦN CŨ CỦA BẠN: Nếu quét chữ bình thường bên ngoài ===
+            else {
+                const selection = window.getSelection();
+                if (selection.rangeCount === 0) return;
 
-            let fullText = "";
-            const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
-            let node;
-            while(node = walker.nextNode()) {
-                if (node.nodeType === Node.TEXT_NODE) fullText += node.textContent;
-                else if (node.tagName === 'INPUT') fullText += ` ${node.getAttribute('data-ans') || ""} `;
+                const range = selection.getRangeAt(0);
+                const container = document.createElement('div');
+                container.appendChild(range.cloneContents());
+
+                // Loại bỏ nhãn đáp án
+                const hints = container.querySelectorAll('.correct-hint');
+                hints.forEach(h => h.remove());
+
+                let fullText = "";
+                const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
+                let node;
+                while(node = walker.nextNode()) {
+                    if (node.nodeType === Node.TEXT_NODE) fullText += node.textContent;
+                    else if (node.tagName === 'INPUT') fullText += ` ${node.getAttribute('data-ans') || ""} `;
+                }
+
+                selectedText = fullText.replace(/[✓✔]/g, '').replace(/\s+/g, ' ').trim();
             }
 
-            let selectedText = fullText.replace(/[✓✔]/g, '').replace(/\s+/g, ' ').trim();
-
+            // Báo hủy nếu không có chữ
             if (!selectedText || selectedText.length < 2) {
                 tooltip.style.display = 'none';
                 return;
             }
 
+            // === TỪ ĐÂY TRỞ XUỐNG LÀ GIỮ NGUYÊN 100% CODE CỦA BẠN ===
             // Hiển thị trạng thái chờ
             tooltip.innerHTML = "⏳ Để xem nào...";
             tooltip.style.display = 'block';
@@ -1074,16 +1088,17 @@
                         btnSave.onclick = async (e) => {
                             e.stopPropagation();
                             
-                            // Lấy nghĩa của từ (Sẽ lấy được tiếng Việt nếu bạn đợi nó dịch xong)
+                            // Lấy nghĩa của từ
                             const firstMeaning = tooltip.querySelector('.dict-meaning-item span[id^="def-"]')?.innerText || "Chưa có nghĩa";
                             
-                            // Chỉ gọi hàm lưu (bên trong hàm này đã có hiệu ứng Toast rồi)
+                            // Chỉ gọi hàm lưu
                             saveToNotebook(entry.word, firstMeaning); 
                             
                             // Đổi icon
                             btnSave.className = "fa-solid fa-bookmark";
                             btnSave.style.transform = "scale(1.2)";
-                        };                    }
+                        };
+                    }
                 } catch (err) {
                     tooltip.innerText = await translateText(selectedText);
                 }
@@ -1097,7 +1112,6 @@
                 tooltip.style.top = `${e.pageY - tooltip.offsetHeight - 20}px`;
             }, 100);
         });
-
         // Hàm hỗ trợ dịch thuật dùng chung (giữ nguyên logic lọc của bạn)
         async function translateText(text) {
             try {
