@@ -340,6 +340,7 @@
             <div class="menu-header" id="menu-email-display">Học viên</div>
             <div onclick="openChangePass()">🔑 Đổi mật khẩu</div>
             <div id="menu-date-display">📅 Khai giảng: ---</div>
+            <div onclick="showNotebookModal()" style="color:var(--primary); font-weight:bold;">📔 Sổ ghi chú</div>
             <div onclick="logout()" style="color:var(--danger); font-weight:bold;">🚪 Đăng xuất</div>
         </div>
     </div>
@@ -1030,21 +1031,44 @@
                         });
 
                         tooltip.innerHTML = `
-                            <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px !important; display: flex; align-items: center;">
-                                <b style="color:var(--accent-yellow); font-size:18px;">${entry.word}</b>
-                                ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" 
-                                    onmouseup="event.stopPropagation();" 
-                                    onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}                            </div>
+                            <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px !important; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center;">
+                                    <b style="color:var(--accent-yellow); font-size:18px;">${entry.word}</b>
+                                    ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" 
+                                        onmouseup="event.stopPropagation();" 
+                                        onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
+                                    <span style="color:#00b894; margin-left:10px; font-size:13px;">${phonetic || ''}</span>
+                                </div>
+                                <i class="fa-regular fa-bookmark" id="btn-save-vocab" 
+                                style="cursor: pointer; color: var(--accent-yellow); font-size: 18px; transition: 0.2s;"
+                                onmouseup="event.stopPropagation();"
+                                title="Lưu vào sổ tay"></i>
+                            </div>
                             <div id="dict-content-area">${meaningsHTML}</div>
                         `;
 
-                        // Dịch các định nghĩa sang tiếng Việt tự động
+                        // === BẮT ĐẦU PHẦN THÊM MỚI: DỊCH SANG TIẾNG VIỆT ===
                         const defSpans = tooltip.querySelectorAll('.dict-meaning-item span[id^="def-"]');
                         defSpans.forEach(async (span) => {
                             const vi = await translateText(span.innerText);
-                            span.innerText = vi;
+                            span.innerText = vi; // Đổi nghĩa tiếng Anh thành tiếng Việt
                         });
-                    }
+                        // === KẾT THÚC PHẦN THÊM MỚI ===
+
+                        const btnSave = tooltip.querySelector('#btn-save-vocab');
+                        btnSave.onclick = async (e) => {
+                            e.stopPropagation();
+                            
+                            // Lấy nghĩa của từ (Sẽ lấy được tiếng Việt nếu bạn đợi nó dịch xong)
+                            const firstMeaning = tooltip.querySelector('.dict-meaning-item span[id^="def-"]')?.innerText || "Chưa có nghĩa";
+                            
+                            // Chỉ gọi hàm lưu (bên trong hàm này đã có hiệu ứng Toast rồi)
+                            saveToNotebook(entry.word, firstMeaning); 
+                            
+                            // Đổi icon
+                            btnSave.className = "fa-solid fa-bookmark";
+                            btnSave.style.transform = "scale(1.2)";
+                        };                    }
                 } catch (err) {
                     tooltip.innerText = await translateText(selectedText);
                 }
@@ -1557,7 +1581,150 @@
                 alert("Bạn đã hoàn thành bài cuối cùng trong danh sách này!");
             }
         };
+        window.saveToNotebook = (word, meaning) => {
+            // 1. Lấy danh sách từ localStorage (nếu chưa có thì tạo mảng rỗng)
+            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+
+            // 2. Kiểm tra từ đã tồn tại chưa
+            if (notebook.some(item => item.word.toLowerCase() === word.toLowerCase())) {
+                showBeautifulToast("Từ này đã có rồi nhé!", "warning");
+                return;
+            }
+
+            // 3. Thêm vào mảng
+            notebook.unshift({
+                word: word,
+                meaning: meaning,
+                date: new Date().toLocaleDateString('vi-VN')
+            });
+
+            // 4. Lưu lại vào máy học viên
+            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
+            
+            // 5. Thông báo nhanh
+            showBeautifulToast("Đã ghi chú!", "success");
+        };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <div id="notebook-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+            <h3 style="color: var(--primary); border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px;">📔 Sổ Tay Của Tôi</h3>
+            <div id="notebook-list" style="text-align: left; margin-top: 15px;"></div>
+            <button onclick="document.getElementById('notebook-modal').style.display='none'" class="btn-main" style="margin-top: 20px;">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        // Hàm hiển thị Sổ tay
+        window.showNotebookModal = () => {
+            const modal = document.getElementById('notebook-modal');
+            const listCont = document.getElementById('notebook-list');
+            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+
+            if (notebook.length === 0) {
+                listCont.innerHTML = "<p style='text-align:center; color:#999;'>Sổ tay đang trống, hãy bôi đen từ để lưu nhé!</p>";
+            } else {
+                listCont.innerHTML = notebook.map((item, index) => `
+                    <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <b style="color: var(--primary); font-size: 16px;">${item.word}</b> 
+                            <div style="font-size: 14px; color: #555;">${item.meaning}</div>
+                            <small style="color: #ccc;">${item.date}</small>
+                        </div>
+                        <i class="fa-solid fa-trash" onclick="deleteFromNotebook(${index})" style="color: var(--danger); cursor: pointer; padding: 5px;"></i>
+                    </div>
+                `).join('');
+            }
+            modal.style.display = 'block';
+        };
+
+        // Hàm xóa từ
+        window.deleteFromNotebook = (index) => {
+            // Lấy danh sách hiện tại
+            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+            let deletedWord = notebook[index].word; // Lưu tạm tên từ để hiện thông báo
+            
+            // Xóa từ khỏi mảng
+            notebook.splice(index, 1);
+            
+            // Cập nhật lại vào bộ nhớ
+            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
+            
+            // Làm mới lại bảng danh sách
+            showNotebookModal(); 
+            
+            // Hiện thông báo trượt xịn xò
+            showBeautifulToast(`Đã xóa "${deletedWord}"`, "success");
+        };
+
+        // 1. HÀM TẠO BẢNG THÔNG BÁO ĐẸP (TOAST)
+        window.showBeautifulToast = (message, type = 'success') => {
+            // Tạo container chứa thông báo nếu chưa có
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+                document.body.appendChild(container);
+            }
+
+            // Thiết lập màu và icon tùy theo loại thông báo
+            const bgColor = type === 'success' ? 'var(--success, #00b894)' : 'var(--danger, #ff7675)';
+            const icon = type === 'success' ? '✅' : '⚠️';
+
+            // Tạo thẻ div thông báo
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                background: ${bgColor};
+                color: white;
+                padding: 12px 25px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transform: translateX(150%);
+                transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            `;
+            toast.innerHTML = `<span style="font-size: 20px;">${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            // Hiệu ứng trượt vào
+            setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 10);
+
+            // Hiệu ứng trượt ra và xóa khỏi DOM sau 3 giây
+            setTimeout(() => {
+                toast.style.transform = 'translateX(150%)';
+                setTimeout(() => toast.remove(), 400); // Đợi trượt xong thì xóa
+            }, 3000);
+        };
+
+        // 2. HÀM LƯU TỪ VỰNG (Đã được nâng cấp thông báo)
+        window.saveToNotebook = (word, meaning) => {
+            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+    
+            // Kiểm tra trùng lặp
+            if (notebook.some(item => item.word.toLowerCase() === word.toLowerCase())) {
+                // ĐÃ THAY ALERT BẰNG TOAST
+                showBeautifulToast("Từ này đã có trong sổ tay rồi!", "warning");
+                return;
+            }
+            
+            // Thêm mới
+            notebook.unshift({
+                word: word,
+                meaning: meaning,
+                date: new Date().toLocaleDateString('vi-VN')
+            });
+            
+            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
+            
+            // ĐÃ THAY ALERT BẰNG TOAST
+            showBeautifulToast(`Đã lưu "${word}" vào sổ tay!`, "success");
+        };
+    </script>
 </body>
 </html>v
