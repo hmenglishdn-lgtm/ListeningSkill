@@ -962,6 +962,9 @@
         };
         document.addEventListener('mouseup', async (e) => {
             const tooltip = document.getElementById('translation-tooltip');
+            if (tooltip.contains(e.target)) {
+                return;
+            }
             const selection = window.getSelection();
             
             if (selection.rangeCount === 0) return;
@@ -1029,9 +1032,9 @@
                         tooltip.innerHTML = `
                             <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px !important; display: flex; align-items: center;">
                                 <b style="color:var(--accent-yellow); font-size:18px;">${entry.word}</b>
-                                ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="new Audio('${audioSrc}').play()"></i>` : ''}
-                                <span style="color:#00b894; margin-left:10px; font-size:13px;">${phonetic}</span>
-                            </div>
+                                ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" 
+                                    onmouseup="event.stopPropagation();" 
+                                    onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}                            </div>
                             <div id="dict-content-area">${meaningsHTML}</div>
                         `;
 
@@ -1070,9 +1073,16 @@
         }
         // Click ra chỗ khác để đóng tooltip
         document.addEventListener('mousedown', (e) => {
-            if (e.target.id !== 'translation-tooltip') {
-                document.getElementById('translation-tooltip').style.display = 'none';
+            const tooltip = document.getElementById('translation-tooltip');
+            
+            // Nếu click trúng vào tooltip hoặc bất kỳ phần tử con nào bên trong (như nút loa)
+            // thì return luôn, không chạy lệnh ẩn (display = 'none')
+            if (tooltip.contains(e.target)) {
+                return; 
             }
+
+            // Chỉ ẩn khi click ra hoàn toàn bên ngoài
+            tooltip.style.display = 'none';
         });
         document.getElementById('upload-btn').onclick = async () => {
             const type = document.getElementById('admin-type').value; // 'dictation' hoặc 'quiz'
