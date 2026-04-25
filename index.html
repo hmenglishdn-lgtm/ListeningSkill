@@ -376,6 +376,44 @@
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        /* Style cho thẻ chọn nghĩa trong từ điển */
+        .meaning-choice-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.08);
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.3s;
+            margin-bottom: 8px !important;
+        }
+        .meaning-choice-card:hover { background: rgba(255,255,255,0.15); }
+        .custom-chk {
+            width: 22px; height: 22px;
+            border: 2px solid #666;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: 0.3s;
+        }
+        /* Style cho từng mục trong sổ tay */
+        .notebook-item {
+            margin-bottom: 12px;
+            background: white;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .note-editor-area {
+            padding: 15px;
+            background: #fdfae6;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -755,71 +793,72 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             
             if (user) {
-                // 1. Hiện loading ngay khi bắt đầu xác thực
+                // 1. Hiện loading để kiểm tra quyền
                 loadingOverlay.style.display = 'flex';
 
                 try {
                     const userRef = doc(db, "users", user.uid); 
                     const snap = await getDoc(userRef);
                     
-                    // --- GIỮ NGUYÊN: Logic kiểm tra tồn tại ---
                     if (!snap.exists()) {
+                        loadingOverlay.style.display = 'none';
                         await signOut(auth);
                         return;
                     }
                     
                     const uData = snap.data();
                     
-                    // --- GIỮ NGUYÊN: Logic kiểm tra phê duyệt (Pending) ---
+                    // --- XỬ LÝ TRẠNG THÁI CHỜ DUYỆT (PENDING) ---
                     if (uData.status === "pending") {
+                        // Tắt loading ngay để học viên thấy bảng thông báo phía sau
+                        loadingOverlay.style.display = 'none';
+
                         const resModal = document.getElementById('result-modal');
-                        document.getElementById('result-icon').innerText = "👨‍🏫";
-                        document.getElementById('result-title').innerText = "Chờ tí nhé!";
-                        document.getElementById('result-stats').innerText = "";
-                        document.getElementById('result-msg').innerHTML = "Chờ thầy Thịnh duyệt nhé";
-                        resModal.style.display = 'block';
                         
+                        // Thiết lập nội dung thông báo
+                        document.getElementById('result-icon').innerText = "👨‍🏫";
+                        document.getElementById('result-title').innerText = "Đã gửi yêu cầu!";
+                        document.getElementById('result-stats').innerText = "";
+                        document.getElementById('result-msg').innerHTML = "Chờ Thầy Thịnh duyệt nhé!";
+                        
+                        // Hiển thị Modal
+                        resModal.style.display = 'block';
+
+                        // Đợi 3 giây (3000ms) rồi tự động thoát ra trang chủ
                         setTimeout(async () => {
                             resModal.style.display = 'none';
-                            await signOut(auth);
+                            await signOut(auth); // Lệnh này sẽ kích hoạt phần 'else' bên dưới để hiện auth-screen
                         }, 3000);
-                        return;
+
+                        return; // Dừng lại, không tải bài học
                     }
 
-                    // --- CẢI TIẾN: Đẩy giao diện lên TRƯỚC khi tải dữ liệu bài học ---
-                    // Việc này giúp F5 hay đăng nhập mới đều thấy app ngay lập tức
+                    // --- XỬ LÝ TRẠNG THÁI ĐÃ DUYỆT (APPROVED) ---
                     document.getElementById('auth-screen').style.display = 'none';
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('menu-trigger').style.display = 'flex';
                     document.getElementById('menu-email-display').innerText = uData.email;
                     document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
 
-                    // Cập nhật lastSeen (Cho chạy ngầm, không dùng await để tránh đợi)
                     updateDoc(userRef, { lastSeen: new Date().getTime() });
 
-                    // --- GIỮ NGUYÊN: Xử lý danh sách bài học và Admin ---
                     const dataPromises = [fetchLessons()];
-                    
                     if (ADMIN_EMAILS.includes(user.email)) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
                         dataPromises.push(fetchAdminData()); 
                     } else {
-                        // Đảm bảo ẩn nút admin nếu là học sinh
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                     }
 
-                    // Đợi tải dữ liệu bài học xong mới tắt Loading
                     await Promise.all(dataPromises);
-                    
+
                 } catch (error) {
-                    console.error("Lỗi hệ thống:", error);
+                    console.error("Lỗi xác thực:", error);
                 } finally {
-                    // CỐ ĐỊNH LỖI TREO: Dù có lỗi tải bài học hay không, 
-                    // sau khi chạy xong try/catch phải tắt loading.
                     loadingOverlay.style.display = 'none';
                 }
             } else {
-                // --- GIỮ NGUYÊN: Logic khi Logout ---
+                // --- KHI CHƯA ĐĂNG NHẬP HOẶC VỪA SIGNOUT ---
                 document.getElementById('auth-screen').style.display = 'block'; 
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('menu-trigger').style.display = 'none';
@@ -1104,21 +1143,19 @@
         };
         document.addEventListener('mouseup', async (e) => {
             const tooltip = document.getElementById('translation-tooltip');
-            if (tooltip.contains(e.target)) {
-                return;
-            }
+            
+            // Nếu bấm vào bên trong tooltip thì không làm gì cả
+            if (tooltip.contains(e.target)) return;
 
             let selectedText = "";
 
-            // === 1. PHẦN MỚI THÊM: Nếu quét chữ bên trong ô Input ===
+            // --- 1. LẤY CHỮ (Từ Input hoặc văn bản ngoài) ---
             if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
                 const input = e.target;
                 if (input.selectionStart !== input.selectionEnd) {
                     selectedText = input.value.substring(input.selectionStart, input.selectionEnd).trim();
                 }
-            } 
-            // === 2. PHẦN CŨ CỦA BẠN: Nếu quét chữ bình thường bên ngoài ===
-            else {
+            } else {
                 const selection = window.getSelection();
                 if (selection.rangeCount === 0) return;
 
@@ -1126,9 +1163,8 @@
                 const container = document.createElement('div');
                 container.appendChild(range.cloneContents());
 
-                // Loại bỏ nhãn đáp án
-                const hints = container.querySelectorAll('.correct-hint');
-                hints.forEach(h => h.remove());
+                // Loại bỏ nhãn đáp án thừa
+                container.querySelectorAll('.correct-hint').forEach(h => h.remove());
 
                 let fullText = "";
                 const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
@@ -1137,27 +1173,29 @@
                     if (node.nodeType === Node.TEXT_NODE) fullText += node.textContent;
                     else if (node.tagName === 'INPUT') fullText += ` ${node.getAttribute('data-ans') || ""} `;
                 }
-
                 selectedText = fullText.replace(/[✓✔]/g, '').replace(/\s+/g, ' ').trim();
             }
 
-            // Báo hủy nếu không có chữ
+            // Nếu không bôi đen gì hoặc chữ quá ngắn thì ẩn tooltip
             if (!selectedText || selectedText.length < 2) {
                 tooltip.style.display = 'none';
                 return;
             }
 
-            // === TỪ ĐÂY TRỞ XUỐNG LÀ GIỮ NGUYÊN 100% CODE CỦA BẠN ===
-            // Hiển thị trạng thái chờ
-            tooltip.innerHTML = "⏳ Để xem nào...";
-            tooltip.style.display = 'block';
-            tooltip.style.left = `${Math.min(window.innerWidth - 300, Math.max(10, e.pageX - 150))}px`;
+            // --- 2. HIỂN THỊ TRẠNG THÁI CHỜ ---
+            tooltip.innerHTML = "⏳ Đang dịch...";
+            tooltip.style.display = 'flex';
+            tooltip.style.flexDirection = 'column';
+            tooltip.style.left = `${Math.min(window.innerWidth - 320, Math.max(10, e.pageX - 150))}px`;
             tooltip.style.top = `${e.pageY - 80}px`;
 
             const words = selectedText.split(/\s+/);
 
+            // --- 3. PHÂN LUỒNG XỬ LÝ ---
             if (words.length === 1) {
-                // --- CHẾ ĐỘ TỪ ĐIỂN (1 TỪ) ---
+                // ==========================================
+                // CHẾ ĐỘ A: TỪ ĐIỂN (BÔI 1 TỪ)
+                // ==========================================
                 try {
                     const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '');
                     const dictUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`;
@@ -1165,78 +1203,75 @@
                     const data = await response.json();
 
                     if (data.title === "No Definitions Found" || !Array.isArray(data)) {
-                        tooltip.innerText = await translateText(selectedText);
+                        // Nếu không thấy trong từ điển, dùng Google Translate
+                        const translated = await translateText(selectedText);
+                        tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
                     } else {
                         const entry = data[0];
-                        // Tìm phiên âm và file âm thanh
                         const phonetic = entry.phonetic || (entry.phonetics.find(p => p.text)?.text) || "";
                         const audioSrc = entry.phonetics.find(p => p.audio !== "")?.audio || "";
                         
-                        let meaningsHTML = "";
-                        // Duyệt qua các loại từ và nghĩa
+                        let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
+                        
                         entry.meanings.slice(0, 3).forEach(m => {
-                            const type = m.partOfSpeech === 'noun' ? '(n)' : 
-                                         m.partOfSpeech === 'verb' ? '(v)' : 
-                                         m.partOfSpeech === 'adjective' ? '(adj)' : 
-                                         m.partOfSpeech === 'adverb' ? '(adv)' : `(${m.partOfSpeech})`;
-                            
-                            // Lấy nghĩa đầu tiên của mỗi loại từ
-                            const definition = m.definitions[0].definition;
-                            meaningsHTML += `<div class="dict-meaning-item"><span class="dict-type">${type}</span><span id="def-${Math.random().toString(36).substr(2, 5)}">${definition}</span></div>`;
+                            const type = m.partOfSpeech === 'noun' ? '(n)' : m.partOfSpeech === 'verb' ? '(v)' : m.partOfSpeech === 'adjective' ? '(adj)' : `(${m.partOfSpeech})`;
+                            m.definitions.slice(0, 2).forEach(def => {
+                                meaningsHTML += `
+                                    <div class="meaning-choice-card" onclick="handleMeaningSelect(this)">
+                                        <div style="flex:1; font-size:13px; padding-right:10px; line-height:1.4 !important;">
+                                            <b style="color:var(--accent-yellow); font-style:italic;">${type}</b> 
+                                            <span class="def-text-span">${def.definition}</span>
+                                        </div>
+                                        <div class="custom-chk"><i class="fa-solid fa-check" style="color:white; display:none; font-size:12px;"></i></div>
+                                    </div>`;
+                            });
                         });
+                        meaningsHTML += `</div>`;
 
                         tooltip.innerHTML = `
-                            <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px !important; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                                 <div style="display: flex; align-items: center;">
                                     <b style="color:var(--accent-yellow); font-size:18px;">${entry.word}</b>
-                                    ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" 
-                                        onmouseup="event.stopPropagation();" 
-                                        onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
-                                    <span style="color:#00b894; margin-left:10px; font-size:13px;">${phonetic || ''}</span>
+                                    ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
                                 </div>
-                                <i class="fa-regular fa-bookmark" id="btn-save-vocab" 
-                                style="cursor: pointer; color: var(--accent-yellow); font-size: 18px; transition: 0.2s;"
-                                onmouseup="event.stopPropagation();"
-                                title="Lưu vào sổ tay"></i>
+                                <span style="color:#00b894; font-size:13px;">${phonetic}</span>
                             </div>
-                            <div id="dict-content-area">${meaningsHTML}</div>
+                            ${meaningsHTML}
+                            <div style="margin-top: 15px; padding: 10px 0; border-top: 1px solid #444; display: flex; justify-content: center;">
+                                <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" 
+                                        style="width: 75%; background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 50px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px; margin: 0 !important;"></i> 
+                                    <span style="margin: 0 !important; line-height: 1;">LƯU VÀO SỔ TAY</span>
+                                </button>
+                            </div>
                         `;
 
-                        // === BẮT ĐẦU PHẦN THÊM MỚI: DỊCH SANG TIẾNG VIỆT ===
-                        const defSpans = tooltip.querySelectorAll('.dict-meaning-item span[id^="def-"]');
-                        defSpans.forEach(async (span) => {
-                            const vi = await translateText(span.innerText);
-                            span.innerText = vi; // Đổi nghĩa tiếng Anh thành tiếng Việt
+                        // Tự động dịch các tầng nghĩa sang tiếng Việt
+                        tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
+                            span.innerText = await translateText(span.innerText);
                         });
-                        // === KẾT THÚC PHẦN THÊM MỚI ===
-
-                        const btnSave = tooltip.querySelector('#btn-save-vocab');
-                        btnSave.onclick = async (e) => {
-                            e.stopPropagation();
-                            
-                            // Lấy nghĩa của từ
-                            const firstMeaning = tooltip.querySelector('.dict-meaning-item span[id^="def-"]')?.innerText || "Chưa có nghĩa";
-                            
-                            // Chỉ gọi hàm lưu
-                            saveToNotebook(entry.word, firstMeaning); 
-                            
-                            // Đổi icon
-                            btnSave.className = "fa-solid fa-bookmark";
-                            btnSave.style.transform = "scale(1.2)";
-                        };
                     }
                 } catch (err) {
-                    tooltip.innerText = await translateText(selectedText);
+                    const translated = await translateText(selectedText);
+                    tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
                 }
             } else {
-                // --- CHẾ ĐỘ DỊCH CÂU (NHIỀU TỪ) ---
-                tooltip.innerText = await translateText(selectedText);
+                // ==========================================
+                // CHẾ ĐỘ B: DỊCH CÂU (BÔI NHIỀU TỪ)
+                // ==========================================
+                try {
+                    const translated = await translateText(selectedText);
+                    tooltip.innerHTML = `<div style="line-height:1.6; padding: 5px 0; font-size: 15px; color: white;">${translated}</div>`;
+                } catch (err) {
+                    tooltip.innerText = "❌ Không thể dịch câu này.";
+                }
             }
-            
-            // Căn chỉnh lại vị trí Tooltip sau khi load nội dung
+
+            // --- 4. CĂN CHỈNH VỊ TRÍ TOOLTIP SAU KHI CÓ NỘI DUNG ---
             setTimeout(() => {
-                tooltip.style.top = `${e.pageY - tooltip.offsetHeight - 20}px`;
-            }, 100);
+                const rect = tooltip.getBoundingClientRect();
+                tooltip.style.top = `${e.pageY - rect.height - 20}px`;
+            }, 150);
         });
         // Hàm hỗ trợ dịch thuật dùng chung (giữ nguyên logic lọc của bạn)
         async function translateText(text) {
@@ -1860,6 +1895,50 @@
             } catch (e) {
                 showBeautifulToast("Lỗi kết nối server!", "danger");
             }
+        };
+        // 1. Cho phép chọn NHIỀU nghĩa cùng lúc (Toggle mode)
+        window.handleMeaningSelect = (element) => {
+            // Toggle class active
+            element.classList.toggle('active');
+            
+            // Hiện/Ẩn dấu tích xanh dựa trên class active
+            const checkIcon = element.querySelector('.fa-check');
+            checkIcon.style.display = element.classList.contains('active') ? 'block' : 'none';
+        };
+
+        // 2. Gộp tất cả các nghĩa đã chọn và Lưu
+        window.processSaveFromTooltip = (word) => {
+            // Lấy tất cả các thẻ đã được tích chọn
+            const activeCards = document.querySelectorAll('.meaning-choice-card.active');
+            
+            if (activeCards.length === 0) {
+                showBeautifulToast("Vui lòng tích chọn ít nhất một nghĩa!", "warning");
+                return;
+            }
+
+            // Duyệt qua từng thẻ để lấy: (Loại từ) + Nghĩa tiếng Việt
+            const selectedMeanings = Array.from(activeCards).map(card => {
+                const type = card.querySelector('b').innerText; // (n), (v)...
+                const text = card.querySelector('.def-text-span').innerText; // Nghĩa đã dịch
+                return `${type} ${text}`;
+            });
+
+            // Gộp các nghĩa lại cách nhau bằng dấu chấm phẩy
+            const finalMeaning = selectedMeanings.join('; ');
+
+            // Gọi hàm lưu Firebase
+            saveToNotebook(word, finalMeaning);
+
+            // Hiệu ứng phản hồi trên nút
+            const btn = document.getElementById('btn-save-cloud');
+            btn.innerHTML = `<i class="fa-solid fa-check-circle" style="font-size: 18px; margin: 0 !important;"></i> <span style="line-height: 1; margin: 0 !important;">ĐÃ LƯU XONG</span>`;
+            btn.style.background = "#2d3436"; 
+            btn.style.width = "75%"; // Đảm bảo giữ nguyên độ dài ngắn
+            btn.style.boxShadow = "none";
+
+            setTimeout(() => {
+                document.getElementById('translation-tooltip').style.display = 'none';
+            }, 1000);        
         };
     </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
