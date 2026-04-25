@@ -99,12 +99,38 @@
             display: inline-block !important;
         } 
         .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .option-btn { background: white; border: 2px solid #e0d0a0; padding: 15px; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; text-align: left; white-space: pre-wrap; }
-        .option-btn:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
         .option-btn.selected { background: var(--primary); color: white; }
         .option-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
         .option-btn.wrong { background: var(--danger) !important; color: white !important; border-color: var(--danger) !important; }
-
+        /* Tinh chỉnh ô chọn đáp án chuẩn UI/UX */
+        .option-btn { 
+            background: white; 
+            border: 2px solid #e0d0a0; 
+            padding: 12px 18px; /* Thu gọn chiều cao nút lại cho thanh thoát */
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s ease; 
+            
+            display: flex;            
+            align-items: center;      
+            justify-content: flex-start; /* Đổi sang CĂN TRÁI để dễ đọc câu dài */
+            text-align: left;       
+            width: 100%;              
+            box-sizing: border-box;   
+            font-size: 15px;          
+            color: var(--text-dark);
+            line-height: 1.4;
+            gap: 15px; /* Khoảng cách giữa chữ A,B,C,D và nội dung */
+        }
+        
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
         .quiz-img-container { margin: 15px 0; display: none; text-align: center; }
         .quiz-img-container img { max-width: 100%; border-radius: 15px; border: 3px solid var(--accent-yellow); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 
@@ -1886,6 +1912,10 @@
 
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
+            
+            // ====================================================================
+            // PHẦN 1: MÀN HÌNH KẾT THÚC (Giữ nguyên 100% code hoành tráng của bạn)
+            // ====================================================================
             if (currentQIndex >= quizWords.length) {
                 const percent = Math.round((quizScore / quizWords.length) * 100);
                 let icon = "🏆";
@@ -1893,28 +1923,25 @@
                 let message = "";
                 let color = "var(--primary)";
 
-                // 1. Phân loại lời khen theo điểm số
                 if (percent === 100) {
                     icon = "👑";
                     title = "Bén Như Cái Chén!";
                     message = "Nỗ lực hết mình vì mục tiêu nhé.";
-                    color = "var(--success)"; // Xanh lá
-                    // Bắn pháo hoa ăn mừng
+                    color = "var(--success)";
                     if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
                 } else if (percent >= 70) {
                     icon = "🔥";
                     title = "Xuất sắc!";
                     message = "Tiếp tục phát huy nhé!";
-                    color = "#f39c12"; // Cam vàng
+                    color = "#f39c12";
                     if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, zIndex: 9999 });
                 } else {
                     icon = "💪";
                     title = "Cố Lên Nào!";
                     message = "Ôn lại vài lần là nhớ ngay!";
-                    color = "var(--danger)"; // Đỏ
+                    color = "var(--danger)";
                 }
 
-                // 2. Render giao diện hoành tráng
                 area.innerHTML = `
                     <div style="text-align: center; padding: 20px 0; animation: fadeIn 0.6s;">
                         <div style="font-size: 75px; margin-bottom: 10px; animation: bounceIcon 1s infinite alternate;">${icon}</div>
@@ -1939,38 +1966,50 @@
                     </style>
                 `;
 
-                // Ẩn cái nút "Dừng Ôn Tập" mặc định ở dưới cùng đi để không bị trùng lặp
                 const defaultCloseBtn = area.parentElement.querySelector('button:last-child');
                 if (defaultCloseBtn && defaultCloseBtn.innerText === "Dừng Ôn Tập") {
                     defaultCloseBtn.style.display = 'none';
                 }
-                return;
+                return; // Thoát hàm để không chạy tiếp xuống phần in câu hỏi
             }
 
+            // ====================================================================
+            // PHẦN 2: HIỂN THỊ CÂU HỎI (Đã thêm Layout Căn Trái + Nhãn A, B, C, D)
+            // ====================================================================
             const currentWord = quizWords[currentQIndex];
             const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
             
-            // Lấy 3 đáp án sai ngẫu nhiên từ sổ tay
+            // Lấy 3 đáp án sai
             let distractors = notebook
-                .filter(w => w.word !== currentWord.word) // Loại đáp án đúng ra
-                .sort(() => 0.5 - Math.random()) // Trộn ngẫu nhiên
-                .slice(0, 3); // Cắt lấy 3 cái
+                .filter(w => w.word !== currentWord.word)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3);
                 
-            // Gộp đáp án đúng và 3 đáp án sai, sau đó trộn vị trí A B C D
+            // Gộp và trộn đáp án
             let options = [currentWord, ...distractors].sort(() => 0.5 - Math.random());
+            
+            // Khai báo mảng nhãn
+            const labels = ['A', 'B', 'C', 'D'];
 
             area.innerHTML = `
-                <div style="font-weight: bold; font-size: 20px; margin-bottom: 20px; text-align: center;">
-                    Từ <span style="color: var(--primary); font-size: 26px;">"${currentWord.word}"</span> có nghĩa là gì?
+                <div style="font-weight: bold; font-size: 20px; margin-bottom: 25px; text-align: center; color: var(--text-dark);">
+                    Từ <span style="color: var(--primary); font-size: 28px;">"${currentWord.word}"</span> có nghĩa là gì?
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    ${options.map(opt => `
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;"> 
+                    ${options.map((opt, index) => `
                         <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word}', '${currentWord.word}')">
-                            ${opt.meaning}
+                            <span style="background: #f1f2f6; color: var(--primary); padding: 5px 0; border-radius: 8px; font-weight: bold; min-width: 30px; text-align: center; flex-shrink: 0;">
+                                ${labels[index]}
+                            </span>
+                            <span>${opt.meaning}</span>
                         </button>
                     `).join('')}
                 </div>
-                <p style="text-align: right; margin-top: 15px; font-size: 14px; color: #999;">Câu ${currentQIndex + 1} / ${quizWords.length}</p>
+                
+                <p style="text-align: right; margin-top: 20px; font-size: 14px; color: #a4b0be; font-weight: 500;">
+                    Câu ${currentQIndex + 1} / ${quizWords.length}
+                </p>
             `;
         };
 
