@@ -1885,7 +1885,10 @@
 
                 if (percent === 100) {
                     icon = "👑"; title = "Bén Như Cái Chén!"; message = "Nỗ lực hết mình vì mục tiêu nhé."; color = "var(--success)";
-                    if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
+                    // --- GỌI HÀM PHÁO HOA SIÊU CẤP TẠI ĐÂY ---
+                    if (typeof confetti === 'function') {
+                        playGrandConfetti();
+                    }
                 } else if (percent >= 70) {
                     icon = "🔥"; title = "Xuất sắc!"; message = "Tiếp tục phát huy nhé!"; color = "#f39c12";
                     if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, zIndex: 9999 });
@@ -1992,6 +1995,33 @@
             msg.lang = 'en-US'; 
             msg.rate = 0.9; 
             window.speechSynthesis.speak(msg);
+        };
+        // 9. HÀM BẮN PHÁO HOA SIÊU CẤP (3 đợt + 1 nổ lớn)
+        window.playGrandConfetti = () => {
+            // Đợt 1: Bắn nhẹ từ dưới lên (0s)
+            setTimeout(() => {
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.9, x: 0.5 }, zIndex: 9999, startVelocity: 45 });
+            }, 0);
+
+            // Đợt 2: Bắn mạnh hơn một chút (sau 0.4s)
+            setTimeout(() => {
+                confetti({ particleCount: 70, spread: 70, origin: { y: 0.9, x: 0.5 }, zIndex: 9999, startVelocity: 55 });
+            }, 400);
+
+            // Đợt 3: Bắn mạnh hơn nữa (sau 0.8s)
+            setTimeout(() => {
+                confetti({ particleCount: 90, spread: 80, origin: { y: 0.9, x: 0.5 }, zIndex: 9999, startVelocity: 65 });
+            }, 800);
+
+            // ĐỢT CUỐI: Bùng nổ full màn hình từ 3 hướng (sau 1.4s)
+            setTimeout(() => {
+                // Nổ bông siêu to ở chính giữa
+                confetti({ particleCount: 250, spread: 360, origin: { y: 0.4, x: 0.5 }, zIndex: 9999, startVelocity: 40 });
+                // Bắn chéo từ góc trái
+                confetti({ particleCount: 150, angle: 60, spread: 80, origin: { x: 0, y: 0.7 }, zIndex: 9999, startVelocity: 60 });
+                // Bắn chéo từ góc phải
+                confetti({ particleCount: 150, angle: 120, spread: 80, origin: { x: 1, y: 0.7 }, zIndex: 9999, startVelocity: 60 });
+            }, 1400);
         };
     </script>
 </body>
