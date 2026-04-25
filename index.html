@@ -313,7 +313,13 @@
             transition: 0.2s;
             display: inline-block;
         }
-        .dict-speaker:hover { transform: scale(1.2); color: white; }
+        .dict-speaker:hover { 
+            transform: scale(1.2); 
+            color: #f39c12 !important; /* Đổi màu cam khi di chuột vào */
+        }
+        .dict-speaker:active {
+            transform: scale(0.9); /* Thu nhỏ lại khi click */
+        }
 
         #translation-tooltip::after {
             content: "";
@@ -1775,7 +1781,7 @@
     </div>
 
     <script>
-        // Hàm hiển thị Sổ tay
+        // 1. Hàm hiển thị Sổ tay
         window.showNotebookModal = () => {
             const modal = document.getElementById('notebook-modal');
             const listCont = document.getElementById('notebook-list');
@@ -1798,28 +1804,18 @@
             modal.style.display = 'block';
         };
 
-        // Hàm xóa từ
+        // 2. Hàm xóa từ
         window.deleteFromNotebook = (index) => {
-            // Lấy danh sách hiện tại
             let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-            let deletedWord = notebook[index].word; // Lưu tạm tên từ để hiện thông báo
-            
-            // Xóa từ khỏi mảng
+            let deletedWord = notebook[index].word; 
             notebook.splice(index, 1);
-            
-            // Cập nhật lại vào bộ nhớ
             localStorage.setItem('hm_notebook', JSON.stringify(notebook));
-            
-            // Làm mới lại bảng danh sách
             showNotebookModal(); 
-            
-            // Hiện thông báo trượt xịn xò
             showBeautifulToast(`Đã xóa "${deletedWord}"`, "success");
         };
 
-        // 1. HÀM TẠO BẢNG THÔNG BÁO ĐẸP (TOAST)
+        // 3. HÀM TẠO BẢNG THÔNG BÁO ĐẸP (TOAST)
         window.showBeautifulToast = (message, type = 'success') => {
-            // Tạo container chứa thông báo nếu chưa có
             let container = document.getElementById('toast-container');
             if (!container) {
                 container = document.createElement('div');
@@ -1828,118 +1824,74 @@
                 document.body.appendChild(container);
             }
 
-            // Thiết lập màu và icon tùy theo loại thông báo
             const bgColor = type === 'success' ? 'var(--success, #00b894)' : 'var(--danger, #ff7675)';
             const icon = type === 'success' ? '✅' : '⚠️';
 
-            // Tạo thẻ div thông báo
             const toast = document.createElement('div');
             toast.style.cssText = `
-                background: ${bgColor};
-                color: white;
-                padding: 12px 25px;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                transform: translateX(150%);
-                transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: ${bgColor}; color: white; padding: 12px 25px; border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25); font-weight: bold; display: flex;
+                align-items: center; gap: 12px; transform: translateX(150%);
+                transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             `;
             toast.innerHTML = `<span style="font-size: 20px;">${icon}</span> <span>${message}</span>`;
             container.appendChild(toast);
 
-            // Hiệu ứng trượt vào
             setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 10);
-
-            // Hiệu ứng trượt ra và xóa khỏi DOM sau 3 giây
             setTimeout(() => {
                 toast.style.transform = 'translateX(150%)';
-                setTimeout(() => toast.remove(), 400); // Đợi trượt xong thì xóa
+                setTimeout(() => toast.remove(), 400); 
             }, 3000);
         };
 
-        // 2. HÀM LƯU TỪ VỰNG (Đã được nâng cấp thông báo)
+        // 4. HÀM LƯU TỪ VỰNG
         window.saveToNotebook = (word, meaning) => {
             let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-    
-            // Kiểm tra trùng lặp
             if (notebook.some(item => item.word.toLowerCase() === word.toLowerCase())) {
-                // ĐÃ THAY ALERT BẰNG TOAST
                 showBeautifulToast("Từ này đã có trong sổ tay rồi!", "warning");
                 return;
             }
-            
-            // Thêm mới
-            notebook.unshift({
-                word: word,
-                meaning: meaning,
-                date: new Date().toLocaleDateString('vi-VN')
-            });
-            
+            notebook.unshift({ word: word, meaning: meaning, date: new Date().toLocaleDateString('vi-VN') });
             localStorage.setItem('hm_notebook', JSON.stringify(notebook));
-            
-            // ĐÃ THAY ALERT BẰNG TOAST
             showBeautifulToast(`Đã lưu "${word}" vào sổ tay!`, "success");
         };
-            // --- TÍNH NĂNG QUIZ TỪ VỰNG SIÊU TỐC ---
+
+        // 5. TÍNH NĂNG QUIZ TỪ VỰNG SIÊU TỐC
         let quizWords = [];
         let currentQIndex = 0;
         let quizScore = 0;
 
         window.startVocabQuiz = () => {
             const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-            
-            // Điều kiện: Phải có ít nhất 4 từ mới tạo được 4 đáp án trắc nghiệm (A,B,C,D)
             if (notebook.length < 4) {
                 showBeautifulToast("Hãy lưu ít nhất 4 từ vựng để bắt đầu chơi nhé!", "warning");
                 return;
             }
-
-            // Trộn ngẫu nhiên danh sách từ và lấy tối đa 10 từ để ôn 1 lần
             quizWords = notebook.sort(() => 0.5 - Math.random()).slice(0, 10);
             currentQIndex = 0;
             quizScore = 0;
-
-            // Đóng bảng sổ tay, mở bảng Quiz
             document.getElementById('notebook-modal').style.display = 'none';
             document.getElementById('vocab-quiz-modal').style.display = 'block';
-
             renderVocabQuestion();
         };
 
+        // 6. HÀM RENDER CÂU HỎI
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
             
-            // ====================================================================
-            // PHẦN 1: MÀN HÌNH KẾT THÚC (Giữ nguyên 100% code hoành tráng của bạn)
-            // ====================================================================
+            // --- NẾU ĐÃ THI XONG -> HIỆN KẾT QUẢ ---
             if (currentQIndex >= quizWords.length) {
                 const percent = Math.round((quizScore / quizWords.length) * 100);
-                let icon = "🏆";
-                let title = "Hoàn thành!";
-                let message = "";
-                let color = "var(--primary)";
+                let icon = "🏆"; let title = "Hoàn thành!"; let message = ""; let color = "var(--primary)";
 
                 if (percent === 100) {
-                    icon = "👑";
-                    title = "Bén Như Cái Chén!";
-                    message = "Nỗ lực hết mình vì mục tiêu nhé.";
-                    color = "var(--success)";
+                    icon = "👑"; title = "Bén Như Cái Chén!"; message = "Nỗ lực hết mình vì mục tiêu nhé."; color = "var(--success)";
                     if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
                 } else if (percent >= 70) {
-                    icon = "🔥";
-                    title = "Xuất sắc!";
-                    message = "Tiếp tục phát huy nhé!";
-                    color = "#f39c12";
+                    icon = "🔥"; title = "Xuất sắc!"; message = "Tiếp tục phát huy nhé!"; color = "#f39c12";
                     if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, zIndex: 9999 });
                 } else {
-                    icon = "💪";
-                    title = "Cố Lên Nào!";
-                    message = "Ôn lại vài lần là nhớ ngay!";
-                    color = "var(--danger)";
+                    icon = "💪"; title = "Cố Lên Nào!"; message = "Ôn lại vài lần là nhớ ngay!"; color = "var(--danger)";
                 }
 
                 area.innerHTML = `
@@ -1959,46 +1911,36 @@
                             <button onclick="document.getElementById('vocab-quiz-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark); width: auto; padding: 12px 25px;">Đóng</button>
                         </div>
                     </div>
-
-                    <style>
-                        @keyframes bounceIcon { from { transform: translateY(0) scale(1); } to { transform: translateY(-15px) scale(1.1); } }
-                        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-                    </style>
                 `;
 
                 const defaultCloseBtn = area.parentElement.querySelector('button:last-child');
                 if (defaultCloseBtn && defaultCloseBtn.innerText === "Dừng Ôn Tập") {
                     defaultCloseBtn.style.display = 'none';
                 }
-                return; // Thoát hàm để không chạy tiếp xuống phần in câu hỏi
+                return; 
             }
 
-            // ====================================================================
-            // PHẦN 2: HIỂN THỊ CÂU HỎI (Đã thêm Layout Căn Trái + Nhãn A, B, C, D)
-            // ====================================================================
+            // --- NẾU CHƯA THI XONG -> HIỆN CÂU HỎI ---
             const currentWord = quizWords[currentQIndex];
             const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
             
-            // Lấy 3 đáp án sai
-            let distractors = notebook
-                .filter(w => w.word !== currentWord.word)
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 3);
-                
-            // Gộp và trộn đáp án
+            let distractors = notebook.filter(w => w.word !== currentWord.word).sort(() => 0.5 - Math.random()).slice(0, 3);
             let options = [currentWord, ...distractors].sort(() => 0.5 - Math.random());
-            
-            // Khai báo mảng nhãn
             const labels = ['A', 'B', 'C', 'D'];
 
             area.innerHTML = `
-                <div style="font-weight: bold; font-size: 20px; margin-bottom: 25px; text-align: center; color: var(--text-dark);">
+                <div style="font-weight: bold; font-size: 20px; margin-bottom: 25px; text-align: center; color: var(--text-dark); position: relative;">
                     Từ <span style="color: var(--primary); font-size: 28px;">"${currentWord.word}"</span> có nghĩa là gì?
+                    
+                    <i class="fa-solid fa-volume-high dict-speaker" 
+                       style="font-size: 22px; cursor: pointer; color: var(--accent-yellow); margin-left: 10px; transition: 0.2s;"
+                       title="Nghe lại"
+                       onclick="playVocabAudio('${currentWord.word.replace(/'/g, "\\'")}')"></i>
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;"> 
                     ${options.map((opt, index) => `
-                        <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word}', '${currentWord.word}')">
+                        <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word.replace(/'/g, "\\'")}', '${currentWord.word.replace(/'/g, "\\'")}')">
                             <span style="background: #f1f2f6; color: var(--primary); padding: 5px 0; border-radius: 8px; font-weight: bold; min-width: 30px; text-align: center; flex-shrink: 0;">
                                 ${labels[index]}
                             </span>
@@ -2011,10 +1953,14 @@
                     Câu ${currentQIndex + 1} / ${quizWords.length}
                 </p>
             `;
-        };
 
+            // Tự động phát âm thanh sau 0.3 giây
+            setTimeout(() => { playVocabAudio(currentWord.word); }, 300);
+            
+        }; // <--- CHÍNH LÀ DẤU NGOẶC NÀY ĐÃ CỨU SỐNG ĐOẠN CODE CỦA BẠN!
+
+        // 7. HÀM CHECK ĐÁP ÁN
         window.checkVocabAnswer = (btnElement, selectedWord, correctWord) => {
-            // Vô hiệu hóa tất cả các nút để không bấm 2 lần
             const buttons = document.querySelectorAll('#vocab-quiz-area .option-btn');
             buttons.forEach(btn => btn.disabled = true);
 
@@ -2032,8 +1978,21 @@
             }
             
             currentQIndex++;
-            // Đợi 1 giây để học viên xem màu đáp án rồi mới chuyển câu
             setTimeout(renderVocabQuestion, 1000);
+        };
+
+        // 8. HÀM PHÁT ÂM TỪ VỰNG
+        window.playVocabAudio = (word) => {
+            if (!('speechSynthesis' in window)) {
+                showBeautifulToast("Trình duyệt của bạn không hỗ trợ tính năng phát âm!", "warning");
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = word; 
+            msg.lang = 'en-US'; 
+            msg.rate = 0.9; 
+            window.speechSynthesis.speak(msg);
         };
     </script>
 </body>
