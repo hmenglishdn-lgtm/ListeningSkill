@@ -333,9 +333,22 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: var(--primary); /* Đổi sang màu tím khi rê chuột vào */
         }
+        /* Màn hình chờ Loading */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--light-yellow); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #ddd;
+            border-top: 5px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="loading-overlay"><div class="spinner"></div><p style="color: var(--primary); font-weight: bold;">Đang tải dữ liệu...</p></div>
     <div id="translation-tooltip"></div>
     <div id="toast">✅ Đã lưu thành công!</div>
     <div class="side-images left-side">
@@ -657,65 +670,93 @@
             try { await sendPasswordResetEmail(auth, document.getElementById('forgot-email').value); alert("Link đã gửi vào Email!"); closeForgot(); } catch(err) { alert(err.message); }
         };
 
+        // --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
         onAuthStateChanged(auth, async (user) => {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
             if (user) {
                 try {
+                    // Hiện màn hình loading trong lúc xác thực sâu
+                    loadingOverlay.style.display = 'flex';
+
                     const userRef = doc(db, "users", user.uid); 
                     const snap = await getDoc(userRef);
                     
-                    if (!snap.exists()) return;
+                    if (!snap.exists()) {
+                        await signOut(auth);
+                        return;
+                    }
+                    
                     const uData = snap.data();
                     
-                    // --- TRƯỜNG HỢP CHƯA ĐƯỢC DUYỆT ---
+                    // Kiểm tra phê duyệt
                     if (uData.status === "pending") {
-                        // 1. Hiện thông báo bằng Result Modal
                         const resModal = document.getElementById('result-modal');
                         document.getElementById('result-icon').innerText = "👨‍🏫";
-                        document.getElementById('result-title').innerText = "Vui lòng chờ chút!";
+                        document.getElementById('result-title').innerText = "Chờ tí nhé!";
                         document.getElementById('result-stats').innerText = "";
-                        document.getElementById('result-msg').innerHTML = "Mấy thầy đang bận dạy, báo lên nhóm nhé :D";
-                        
+                        document.getElementById('result-msg').innerHTML = "Chờ thầy Thịnh duyệt nhé";
                         resModal.style.display = 'block';
-
-                        // 2. Sau 3 giây mới đăng xuất và đóng bảng
+                        
                         setTimeout(async () => {
                             resModal.style.display = 'none';
                             await signOut(auth);
                         }, 3000);
-                        return; // Thoát hàm, không chạy các lệnh bên dưới
+                        return;
                     }
 
-                    // --- TRƯỜNG HỢP ĐÃ DUYỆT (Giữ nguyên logic cũ của bạn) ---
+                    // Đã duyệt -> Cập nhật lastSeen
                     await updateDoc(userRef, { lastSeen: new Date().getTime() });
 
+                    // Hiển thị giao diện chính
                     document.getElementById('auth-screen').style.display = 'none';
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('menu-trigger').style.display = 'flex';
                     document.getElementById('menu-email-display').innerText = uData.email;
                     document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
                     
+                    // Phân quyền Admin
                     if (user.email === ADMIN_EMAIL) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
-                        fetchAdminData();
+                        await fetchAdminData();
                     }
-                    fetchLessons();
+
+                    // QUAN TRỌNG: Lấy dữ liệu bài học
+                    // Thêm một chút delay (200ms) để chắc chắn Token Firebase đã sẵn sàng
+                    setTimeout(async () => {
+                        await fetchLessons();
+                        loadingOverlay.style.display = 'none'; // Chỉ tắt Loading khi ĐÃ có dữ liệu
+                    }, 200);
 
                 } catch (error) {
                     console.error("Lỗi xác thực:", error);
+                    loadingOverlay.style.display = 'none';
                 }
             } else {
-                // Khi logout hoặc chưa login
+                // Khi logout
                 document.getElementById('auth-screen').style.display = 'block'; 
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('menu-trigger').style.display = 'none';
+                loadingOverlay.style.display = 'none'; // Tắt loading để hiện màn hình login
             }
         });
 
         async function fetchLessons() {
-            const snap = await getDocs(query(collection(db, "lessons"), orderBy("createdAt", "desc")));
-            allLessons = []; snap.forEach(d => allLessons.push({ ...d.data(), id: d.id }));
-            filterLessonsByLevel(); filterQuizByPart();
-            if (auth.currentUser?.email === ADMIN_EMAIL) fetchAdminLessons();
+            try {
+                const snap = await getDocs(query(collection(db, "lessons"), orderBy("createdAt", "desc")));
+                allLessons = []; 
+                snap.forEach(d => allLessons.push({ ...d.data(), id: d.id }));
+                
+                // Cập nhật Selectbox
+                filterLessonsByLevel(); 
+                filterQuizByPart();
+                
+                if (auth.currentUser?.email === ADMIN_EMAIL) fetchAdminLessons();
+                
+                console.log("Đã tải xong " + allLessons.length + " bài học.");
+            } catch (err) {
+                console.error("Lỗi tải bài học:", err);
+            }
         }
 
         const parseTextWithBlanks = (text) => (text || "").replace(/\[(.*?)\]/g, (m, w) => `<span class="blank-wrapper"><input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}"><span class="correct-hint"></span></span>`);
