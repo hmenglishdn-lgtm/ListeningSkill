@@ -764,19 +764,19 @@
                     document.getElementById('menu-email-display').innerText = uData.email;
                     document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
                     
-                    // Phân quyền Admin
+                    // --- XỬ LÝ DỮ LIỆU ---
+                    // Sử dụng Promise.all để tải cả Bài học và Dữ liệu Admin CÙNG LÚC
+                    const dataPromises = [fetchLessons()];
+                    
                     if (user.email === ADMIN_EMAIL) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
-                        await fetchAdminData();
+                        // Thêm tác vụ tải dữ liệu Admin vào danh sách cần tải
+                        dataPromises.push(fetchAdminData()); 
                     }
 
-                    // QUAN TRỌNG: Lấy dữ liệu bài học
-                    // Thêm một chút delay (200ms) để chắc chắn Token Firebase đã sẵn sàng
-                    setTimeout(async () => {
-                        await fetchLessons();
-                        loadingOverlay.style.display = 'none'; // Chỉ tắt Loading khi ĐÃ có dữ liệu
-                    }, 200);
-
+                    // Đợi TẤT CẢ dữ liệu tải xong (cả học viên lẫn Admin) mới tắt màn hình Loading
+                    await Promise.all(dataPromises);
+                    loadingOverlay.style.display = 'none';
                 } catch (error) {
                     console.error("Lỗi xác thực:", error);
                     loadingOverlay.style.display = 'none';
