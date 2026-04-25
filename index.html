@@ -579,12 +579,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const storage = getStorage(app);
-        const ADMIN_EMAIL = "hmenglishdn@gmail.com";
+        const ADMIN_EMAILS = ["hmenglishdn@gmail.com", "thinhphilip,icdanang@gmail.com"];
         setPersistence(auth, browserSessionPersistence);
         // Hàm sắp xếp thông minh: Ưu tiên Nhóm đề, sau đó mới đến Số thứ tự
         const smartSort = (a, b) => {
@@ -755,13 +755,14 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             
             if (user) {
-                try {
-                    // Hiện màn hình loading trong lúc xác thực sâu
-                    loadingOverlay.style.display = 'flex';
+                // 1. Hiện loading ngay khi bắt đầu xác thực
+                loadingOverlay.style.display = 'flex';
 
+                try {
                     const userRef = doc(db, "users", user.uid); 
                     const snap = await getDoc(userRef);
                     
+                    // --- GIỮ NGUYÊN: Logic kiểm tra tồn tại ---
                     if (!snap.exists()) {
                         await signOut(auth);
                         return;
@@ -769,7 +770,7 @@
                     
                     const uData = snap.data();
                     
-                    // Kiểm tra phê duyệt
+                    // --- GIỮ NGUYÊN: Logic kiểm tra phê duyệt (Pending) ---
                     if (uData.status === "pending") {
                         const resModal = document.getElementById('result-modal');
                         document.getElementById('result-icon').innerText = "👨‍🏫";
@@ -785,42 +786,46 @@
                         return;
                     }
 
-                    // Đã duyệt -> Cập nhật lastSeen
-                    await updateDoc(userRef, { lastSeen: new Date().getTime() });
-
-                    // Hiển thị giao diện chính
+                    // --- CẢI TIẾN: Đẩy giao diện lên TRƯỚC khi tải dữ liệu bài học ---
+                    // Việc này giúp F5 hay đăng nhập mới đều thấy app ngay lập tức
                     document.getElementById('auth-screen').style.display = 'none';
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('menu-trigger').style.display = 'flex';
                     document.getElementById('menu-email-display').innerText = uData.email;
                     document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
-                    
-                    // --- XỬ LÝ DỮ LIỆU ---
-                    // Sử dụng Promise.all để tải cả Bài học và Dữ liệu Admin CÙNG LÚC
+
+                    // Cập nhật lastSeen (Cho chạy ngầm, không dùng await để tránh đợi)
+                    updateDoc(userRef, { lastSeen: new Date().getTime() });
+
+                    // --- GIỮ NGUYÊN: Xử lý danh sách bài học và Admin ---
                     const dataPromises = [fetchLessons()];
                     
-                    if (user.email === ADMIN_EMAIL) {
+                    if (ADMIN_EMAILS.includes(user.email)) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
-                        // Thêm tác vụ tải dữ liệu Admin vào danh sách cần tải
                         dataPromises.push(fetchAdminData()); 
+                    } else {
+                        // Đảm bảo ẩn nút admin nếu là học sinh
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                     }
 
-                    // Đợi TẤT CẢ dữ liệu tải xong (cả học viên lẫn Admin) mới tắt màn hình Loading
+                    // Đợi tải dữ liệu bài học xong mới tắt Loading
                     await Promise.all(dataPromises);
-                    loadingOverlay.style.display = 'none';
+                    
                 } catch (error) {
-                    console.error("Lỗi xác thực:", error);
+                    console.error("Lỗi hệ thống:", error);
+                } finally {
+                    // CỐ ĐỊNH LỖI TREO: Dù có lỗi tải bài học hay không, 
+                    // sau khi chạy xong try/catch phải tắt loading.
                     loadingOverlay.style.display = 'none';
                 }
             } else {
-                // Khi logout
+                // --- GIỮ NGUYÊN: Logic khi Logout ---
                 document.getElementById('auth-screen').style.display = 'block'; 
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('menu-trigger').style.display = 'none';
-                loadingOverlay.style.display = 'none'; // Tắt loading để hiện màn hình login
+                loadingOverlay.style.display = 'none';
             }
         });
-
         async function fetchLessons() {
             try {
                 const snap = await getDocs(query(collection(db, "lessons"), orderBy("createdAt", "desc")));
@@ -831,7 +836,7 @@
                 filterLessonsByLevel(); 
                 filterQuizByPart();
                 
-                if (auth.currentUser?.email === ADMIN_EMAIL) fetchAdminLessons();
+                if (ADMIN_EMAILS.includes(auth.currentUser?.email)) fetchAdminLessons();
                 
                 console.log("Đã tải xong " + allLessons.length + " bài học.");
             } catch (err) {
@@ -1530,7 +1535,7 @@
             
             snap.forEach(d => {
                 const u = d.data(); 
-                if(u.email === ADMIN_EMAIL) return;
+                if(ADMIN_EMAILS.includes(u.email)) return;
                 
                 const lastSeenStr = u.lastSeen ? new Date(u.lastSeen).toLocaleString('vi-VN') : '---';
 
@@ -1731,28 +1736,130 @@
                 alert("Bạn đã hoàn thành bài cuối cùng trong danh sách này!");
             }
         };
-        window.saveToNotebook = (word, meaning) => {
-            // 1. Lấy danh sách từ localStorage (nếu chưa có thì tạo mảng rỗng)
-            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+         // ====================================================================
+        // HỆ THỐNG SỔ TAY ĐÁM MÂY (FIRESTORE) - CHUẨN 100%
+        // ====================================================================
 
-            // 2. Kiểm tra từ đã tồn tại chưa
-            if (notebook.some(item => item.word.toLowerCase() === word.toLowerCase())) {
-                showBeautifulToast("Từ này đã có rồi nhé!", "warning");
+        // Biến toàn cục cho phần Quiz
+        let quizWords = [];
+        let currentQIndex = 0;
+        let quizScore = 0;
+
+        // 1. Hàm lưu từ vựng lên Firebase
+        window.saveToNotebook = async (word, meaning) => {
+            if (!auth.currentUser) {
+                showBeautifulToast("Vui lòng đăng nhập để lưu từ!", "danger");
                 return;
             }
 
-            // 3. Thêm vào mảng
-            notebook.unshift({
-                word: word,
-                meaning: meaning,
-                date: new Date().toLocaleDateString('vi-VN')
-            });
-
-            // 4. Lưu lại vào máy học viên
-            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
+            const uid = auth.currentUser.uid;
             
-            // 5. Thông báo nhanh
-            showBeautifulToast("Đã ghi chú!", "success");
+            try {
+                // Kiểm tra xem từ này đã tồn tại trong sổ tay của user này chưa
+                const q = query(collection(db, "notebooks"), 
+                                where("uid", "==", uid), 
+                                where("word", "==", word.toLowerCase()));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    showBeautifulToast("Từ này đã có trong sổ tay rồi!", "warning");
+                    return;
+                }
+
+                // Lưu mới
+                await addDoc(collection(db, "notebooks"), {
+                    uid: uid,
+                    word: word.toLowerCase(),
+                    meaning: meaning,
+                    createdAt: new Date().getTime()
+                });
+
+                showBeautifulToast(`Đã lưu "${word}" vào sổ tay đám mây!`, "success");
+            } catch (e) {
+                console.error("Lỗi lưu sổ tay:", e);
+                showBeautifulToast("Không thể lưu. Thử lại sau nhé!", "danger");
+            }
+        };
+
+        // 2. Hàm hiển thị Sổ tay (Tải từ Firebase)
+        window.showNotebookModal = async () => {
+            const modal = document.getElementById('notebook-modal');
+            const listCont = document.getElementById('notebook-list');
+            
+            if (!auth.currentUser) return;
+            const uid = auth.currentUser.uid;
+
+            listCont.innerHTML = "<p style='text-align:center;'>⏳ Đang tải dữ liệu từ đám mây...</p>";
+            modal.style.display = 'block';
+
+            try {
+                const q = query(collection(db, "notebooks"), 
+                                where("uid", "==", uid), 
+                                orderBy("createdAt", "desc"));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    listCont.innerHTML = "<p style='text-align:center; color:#999;'>Sổ tay trống. Hãy bôi đen từ trong bài học để lưu!</p>";
+                } else {
+                    let html = "";
+                    snap.forEach(docSnap => {
+                        const item = docSnap.data();
+                        html += `
+                            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <b style="color: var(--primary); font-size: 16px;">${item.word}</b> 
+                                    <div style="font-size: 14px; color: #555;">${item.meaning}</div>
+                                </div>
+                                <i class="fa-solid fa-trash" onclick="deleteFromNotebook('${docSnap.id}', '${item.word.replace(/'/g, "\\'")}')" 
+                                   style="color: var(--danger); cursor: pointer; padding: 8px;"></i>
+                            </div>`;
+                    });
+                    listCont.innerHTML = html;
+                }
+            } catch (e) {
+                listCont.innerHTML = "<p style='text-align:center; color:red;'>Lỗi tải dữ liệu. Vui lòng thử lại!</p>";
+            }
+        };
+
+        // 3. Hàm xóa từ khỏi Firebase
+        window.deleteFromNotebook = async (docId, word) => {
+            if (confirm(`Xóa từ "${word}" khỏi sổ tay?`)) {
+                try {
+                    await deleteDoc(doc(db, "notebooks", docId));
+                    showBeautifulToast("Đã xóa!", "success");
+                    showNotebookModal(); // Load lại danh sách
+                } catch (e) {
+                    showBeautifulToast("Lỗi khi xóa!", "danger");
+                }
+            }
+        };
+
+        // 4. Cập nhật hàm Quiz để lấy dữ liệu từ Firebase
+        window.startVocabQuiz = async () => {
+            if (!auth.currentUser) return;
+            const uid = auth.currentUser.uid;
+            
+            try {
+                const q = query(collection(db, "notebooks"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+                const notebook = [];
+                snap.forEach(d => notebook.push(d.data()));
+
+                if (notebook.length < 4) {
+                    showBeautifulToast("Cần ít nhất 4 từ để bắt đầu Quiz nhé!", "warning");
+                    return;
+                }
+
+                window.quizWords = notebook.sort(() => 0.5 - Math.random()).slice(0, 10);
+                window.currentQIndex = 0;
+                window.quizScore = 0;
+
+                document.getElementById('notebook-modal').style.display = 'none';
+                document.getElementById('vocab-quiz-modal').style.display = 'block';
+                renderVocabQuestion();
+            } catch (e) {
+                showBeautifulToast("Lỗi kết nối server!", "danger");
+            }
         };
     </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -1780,39 +1887,6 @@
     </div>
 
     <script>
-        // 1. Hàm hiển thị Sổ tay
-        window.showNotebookModal = () => {
-            const modal = document.getElementById('notebook-modal');
-            const listCont = document.getElementById('notebook-list');
-            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-
-            if (notebook.length === 0) {
-                listCont.innerHTML = "<p style='text-align:center; color:#999;'>Sổ tay đang trống, hãy bôi đen từ để lưu nhé!</p>";
-            } else {
-                listCont.innerHTML = notebook.map((item, index) => `
-                    <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <b style="color: var(--primary); font-size: 16px;">${item.word}</b> 
-                            <div style="font-size: 14px; color: #555;">${item.meaning}</div>
-                            <small style="color: #ccc;">${item.date}</small>
-                        </div>
-                        <i class="fa-solid fa-trash" onclick="deleteFromNotebook(${index})" style="color: var(--danger); cursor: pointer; padding: 5px;"></i>
-                    </div>
-                `).join('');
-            }
-            modal.style.display = 'block';
-        };
-
-        // 2. Hàm xóa từ
-        window.deleteFromNotebook = (index) => {
-            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-            let deletedWord = notebook[index].word; 
-            notebook.splice(index, 1);
-            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
-            showNotebookModal(); 
-            showBeautifulToast(`Đã xóa "${deletedWord}"`, "success");
-        };
-
         // 3. HÀM TẠO BẢNG THÔNG BÁO ĐẸP (TOAST)
         window.showBeautifulToast = (message, type = 'success') => {
             let container = document.getElementById('toast-container');
@@ -1843,49 +1917,17 @@
             }, 3000);
         };
 
-        // 4. HÀM LƯU TỪ VỰNG
-        window.saveToNotebook = (word, meaning) => {
-            let notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-            if (notebook.some(item => item.word.toLowerCase() === word.toLowerCase())) {
-                showBeautifulToast("Từ này đã có trong sổ tay rồi!", "warning");
-                return;
-            }
-            notebook.unshift({ word: word, meaning: meaning, date: new Date().toLocaleDateString('vi-VN') });
-            localStorage.setItem('hm_notebook', JSON.stringify(notebook));
-            showBeautifulToast(`Đã lưu "${word}" vào sổ tay!`, "success");
-        };
-
-        // 5. TÍNH NĂNG QUIZ TỪ VỰNG SIÊU TỐC
-        let quizWords = [];
-        let currentQIndex = 0;
-        let quizScore = 0;
-
-        window.startVocabQuiz = () => {
-            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
-            if (notebook.length < 4) {
-                showBeautifulToast("Hãy lưu ít nhất 4 từ vựng để bắt đầu chơi nhé!", "warning");
-                return;
-            }
-            quizWords = notebook.sort(() => 0.5 - Math.random()).slice(0, 10);
-            currentQIndex = 0;
-            quizScore = 0;
-            document.getElementById('notebook-modal').style.display = 'none';
-            document.getElementById('vocab-quiz-modal').style.display = 'block';
-            renderVocabQuestion();
-        };
-
         // 6. HÀM RENDER CÂU HỎI
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
             
             // --- NẾU ĐÃ THI XONG -> HIỆN KẾT QUẢ ---
-            if (currentQIndex >= quizWords.length) {
-                const percent = Math.round((quizScore / quizWords.length) * 100);
+            if (window.currentQIndex >= window.quizWords.length) {
+                const percent = Math.round((window.quizScore / window.quizWords.length) * 100);
                 let icon = "🏆"; let title = "Hoàn thành!"; let message = ""; let color = "var(--primary)";
 
                 if (percent === 100) {
                     icon = "👑"; title = "Bén Như Cái Chén!"; message = "Nỗ lực hết mình vì mục tiêu nhé."; color = "var(--success)";
-                    // --- GỌI HÀM PHÁO HOA SIÊU CẤP TẠI ĐÂY ---
                     if (typeof confetti === 'function') {
                         playGrandConfetti();
                     }
@@ -1903,7 +1945,7 @@
                         
                         <div style="display: inline-block; background: #f8f9fa; padding: 15px 25px; border-radius: 20px; border: 2px dashed ${color}; margin-bottom: 20px;">
                             <div style="font-size: 16px; color: #555; margin-bottom: 5px;">Thành tích của bạn</div>
-                            <div style="font-size: 28px; font-weight: bold; color: var(--text-dark);">Đúng ${quizScore} / ${quizWords.length}</div>
+                            <div style="font-size: 28px; font-weight: bold; color: var(--text-dark);">Đúng ${window.quizScore} / ${window.quizWords.length}</div>
                         </div>
                         
                         <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.5; padding: 0 10px;">${message}</p>
@@ -1923,7 +1965,7 @@
             }
 
             // --- NẾU CHƯA THI XONG -> HIỆN CÂU HỎI ---
-            const currentWord = quizWords[currentQIndex];
+            const currentWord = window.quizWords[window.currentQIndex];
             const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
             
             let distractors = notebook.filter(w => w.word !== currentWord.word).sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -1952,14 +1994,14 @@
                 </div>
                 
                 <p style="text-align: right; margin-top: 20px; font-size: 14px; color: #a4b0be; font-weight: 500;">
-                    Câu ${currentQIndex + 1} / ${quizWords.length}
+                    Câu ${window.currentQIndex + 1} / ${window.quizWords.length}
                 </p>
             `;
 
             // Tự động phát âm thanh sau 0.3 giây
             setTimeout(() => { playVocabAudio(currentWord.word); }, 300);
             
-        }; // <--- CHÍNH LÀ DẤU NGOẶC NÀY ĐÃ CỨU SỐNG ĐOẠN CODE CỦA BẠN!
+        };
 
         // 7. HÀM CHECK ĐÁP ÁN
         window.checkVocabAnswer = (btnElement, selectedWord, correctWord) => {
@@ -1971,7 +2013,7 @@
                 btnElement.style.color = "white";
                 btnElement.style.borderColor = "var(--success)";
                 showBeautifulToast("Quá Chuẩn Em nhé!", "success");
-                quizScore++;
+                window.quizScore++;
             } else {
                 btnElement.style.background = "var(--danger)";
                 btnElement.style.color = "white";
@@ -1979,7 +2021,7 @@
                 showBeautifulToast(`❌ Sai rồi! Đáp án đúng của ${correctWord} là cái khác.`, "warning");
             }
             
-            currentQIndex++;
+            window.currentQIndex++;
             setTimeout(renderVocabQuestion, 1000);
         };
 
@@ -1996,6 +2038,7 @@
             msg.rate = 0.9; 
             window.speechSynthesis.speak(msg);
         };
+
         // 9. HÀM BẮN PHÁO HOA SIÊU CẤP (3 đợt + 1 nổ lớn)
         window.playGrandConfetti = () => {
             // Đợt 1: Bắn nhẹ từ dưới lên (0s)
