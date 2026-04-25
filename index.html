@@ -315,12 +315,11 @@
         }
         .dict-speaker:hover { 
             transform: scale(1.2); 
-            color: #f39c12 !important; /* Đổi màu cam khi di chuột vào */
+            color: var(--success) !important; /* Đổi sang màu xanh đậm khi rê chuột vào */
         }
         .dict-speaker:active {
             transform: scale(0.9); /* Thu nhỏ lại khi click */
         }
-
         #translation-tooltip::after {
             content: "";
             position: absolute;
@@ -1933,7 +1932,7 @@
                     Từ <span style="color: var(--primary); font-size: 28px;">"${currentWord.word}"</span> có nghĩa là gì?
                     
                     <i class="fa-solid fa-volume-high dict-speaker" 
-                       style="font-size: 22px; cursor: pointer; color: var(--accent-yellow); margin-left: 10px; transition: 0.2s;"
+                       style="font-size: 32px; cursor: pointer; color: #a2e043; margin-left: 15px; transition: 0.2s; vertical-align: middle;"
                        title="Nghe lại"
                        onclick="playVocabAudio('${currentWord.word.replace(/'/g, "\\'")}')"></i>
                 </div>
