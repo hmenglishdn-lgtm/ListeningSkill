@@ -666,8 +666,57 @@
                 }
             }
         };
+        // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
         document.getElementById('confirm-forgot-btn').onclick = async () => {
-            try { await sendPasswordResetEmail(auth, document.getElementById('forgot-email').value); alert("Link đã gửi vào Email!"); closeForgot(); } catch(err) { alert(err.message); }
+            const emailInput = document.getElementById('forgot-email');
+            const email = emailInput.value.trim();
+            const btn = document.getElementById('confirm-forgot-btn');
+
+            if (!email) {
+                showBeautifulToast("Vui lòng nhập Email của bạn!", "warning");
+                return;
+            }
+
+            try {
+                // 1. Vô hiệu hóa nút để tránh học viên bấm 'spam' liên tục
+                btn.innerText = "⏳ Đang gửi...";
+                btn.disabled = true;
+
+                // 2. Gửi lệnh khôi phục mật khẩu
+                await sendPasswordResetEmail(auth, email);
+
+                // 3. Thông báo thành công bằng Toast xịn xò
+                showBeautifulToast("Link khôi phục đã được gửi vào Email!", "success");
+                
+                // 4. Đóng modal và reset input sau 1 giây
+                setTimeout(() => {
+                    closeForgot();
+                    emailInput.value = "";
+                    btn.innerText = "Gửi Yêu Cầu";
+                    btn.disabled = false;
+                }, 1000);
+
+            } catch (err) {
+                btn.innerText = "Gửi Yêu Cầu";
+                btn.disabled = false;
+
+                // 5. Xử lý các lỗi phổ biến từ Firebase
+                console.error("Lỗi Quên mật khẩu:", err.code);
+                
+                switch (err.code) {
+                    case 'auth/user-not-found':
+                        showBeautifulToast("❌ Email này chưa đăng ký trên hệ thống!", "warning");
+                        break;
+                    case 'auth/invalid-email':
+                        showBeautifulToast("❌ Định dạng Email không đúng!", "warning");
+                        break;
+                    case 'auth/too-many-requests':
+                        showBeautifulToast("⚠️ Bạn gửi yêu cầu quá nhanh, vui lòng đợi ít phút!", "warning");
+                        break;
+                    default:
+                        showBeautifulToast("❌ Lỗi: " + err.message, "warning");
+                }
+            }
         };
 
         // --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
