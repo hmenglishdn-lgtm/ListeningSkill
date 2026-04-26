@@ -424,6 +424,17 @@
             background: #fdfae6;
             border-top: 1px solid #eee;
         }
+        /* --- TỐI ƯU GIAO DIỆN MODAL TRÊN MOBILE --- */
+        @media (max-width: 600px) {
+            .modal-content {
+                padding: 20px 15px !important; /* Thu nhỏ khoảng cách viền trong */
+                width: 95% !important; /* Mở rộng chiều ngang trên mobile */
+            }
+            .option-btn {
+                padding: 10px 12px; /* Nút đáp án gọn lại */
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -650,11 +661,19 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
-        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const storage = getStorage(app);
+        const app = initializeApp(firebaseConfig); 
+        const auth = getAuth(app); 
+        const db = getFirestore(app); 
+        const storage = getStorage(app);
+        
+        // --- CẢI TIẾN 3: BẬT BỘ NHỚ ĐỆM (CACHE) SIÊU TỐC ---
+        enableIndexedDbPersistence(db).catch((err) => {
+            console.warn("Không thể bật cache offline:", err);
+        });
+
         const ADMIN_EMAILS = ["hmenglishdn@gmail.com", "thinhphilip.icdanang@gmail.com"];
         setPersistence(auth, browserSessionPersistence);
         // Hàm sắp xếp thông minh: Ưu tiên Nhóm đề, sau đó mới đến Số thứ tự
@@ -688,6 +707,7 @@
         // Quan trọng: Đẩy vào window để các hàm khác luôn thấy nó
         window.smartSort = smartSort;
             let allLessons = []; let currentEditId = null;
+            let isDataLoaded = false;
         // --- AUTH LOGIC ---
         document.getElementById('login-btn').onclick = async () => {
             const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
@@ -838,7 +858,7 @@
             }
         };
 
-        // --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
+// --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
         onAuthStateChanged(auth, async (user) => {
             const loadingOverlay = document.getElementById('loading-overlay');
             
@@ -892,6 +912,10 @@
 
                     updateDoc(userRef, { lastSeen: new Date().getTime() });
 
+                    // --- 1. TẮT LOADING NGAY LẬP TỨC ĐỂ GIẢI PHÓNG GIAO DIỆN ---
+                    loadingOverlay.style.display = 'none';
+
+                    // --- 2. CHẠY NGẦM VIỆC TẢI DỮ LIỆU PHÍA SAU (Không có await) ---
                     const dataPromises = [fetchLessons()];
                     if (ADMIN_EMAILS.includes(user.email)) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
@@ -900,13 +924,12 @@
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                     }
 
-                    await Promise.all(dataPromises);
+                    Promise.all(dataPromises); 
 
                 } catch (error) {
                     console.error("Lỗi xác thực:", error);
-                } finally {
-                    loadingOverlay.style.display = 'none';
-                }
+                    loadingOverlay.style.display = 'none'; // Lỗi cũng tắt loading để ko bị treo
+                } 
             } else {
                 // --- KHI CHƯA ĐĂNG NHẬP HOẶC VỪA SIGNOUT ---
                 document.getElementById('auth-screen').style.display = 'block'; 
@@ -921,6 +944,8 @@
                 allLessons = []; 
                 snap.forEach(d => allLessons.push({ ...d.data(), id: d.id }));
                 
+                isDataLoaded = true;
+
                 // Cập nhật Selectbox
                 filterLessonsByLevel(); 
                 filterQuizByPart();
@@ -1805,10 +1830,21 @@
             
             if (!lvl) return;
 
+            // KIỂM TRA TRẠNG THÁI TẢI
+            if (!isDataLoaded) {
+                sel.innerHTML = '<option value="">⏳ Đang tải dữ liệu, vui lòng chờ...</option>';
+                return;
+            }
+
             // Lọc và Sắp xếp theo Tiêu đề A-Z
             const filtered = allLessons
                 .filter(l => l.type !== 'quiz' && l.level === lvl)
-                .sort(smartSort); // Thay a.title.localeCompare(b.title) bằng smartSort
+                .sort(smartSort); 
+
+            if (filtered.length === 0) {
+                sel.innerHTML = '<option value="">Không có bài học cho cấp độ này</option>';
+                return;
+            }
 
             filtered.forEach(d => {
                 sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
@@ -1820,6 +1856,12 @@
             sel.innerHTML = '<option value="">Chọn câu hỏi</option>';
             
             if (!part) return;
+
+            // KIỂM TRA TRẠNG THÁI TẢI
+            if (!isDataLoaded) {
+                sel.innerHTML = '<option value="">⏳ Đang tải dữ liệu, vui lòng chờ...</option>';
+                return;
+            }
 
             // Phải đảm bảo biến allLessons đã có dữ liệu từ Firebase
             const filtered = allLessons
@@ -2135,6 +2177,8 @@
                     return;
                 }
 
+                // LƯU TOÀN BỘ SỔ TAY VÀO BIẾN TOÀN CỤC ĐỂ LẤY ĐÁP ÁN NHIỄU
+                window.fullNotebook = notebook; 
                 window.quizWords = notebook.sort(() => 0.5 - Math.random()).slice(0, 10);
                 window.currentQIndex = 0;
                 window.quizScore = 0;
@@ -2254,6 +2298,7 @@
         };
 
         // 6. HÀM RENDER CÂU HỎI
+        // 6. HÀM RENDER CÂU HỎI (Đã tối ưu giao diện cho Mobile)
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
             
@@ -2265,7 +2310,7 @@
                 if (percent === 100) {
                     icon = "👑"; title = "Bén Như Cái Chén!"; message = "Nỗ lực hết mình vì mục tiêu nhé."; color = "var(--success)";
                     if (typeof confetti === 'function') {
-                        playGrandConfetti();
+                        window.playGrandConfetti(); // Đảm bảo gọi hàm pháo hoa bự
                     }
                 } else if (percent >= 70) {
                     icon = "🔥"; title = "Xuất sắc!"; message = "Tiếp tục phát huy nhé!"; color = "#f39c12";
@@ -2302,12 +2347,16 @@
 
             // --- NẾU CHƯA THI XONG -> HIỆN CÂU HỎI ---
             const currentWord = window.quizWords[window.currentQIndex];
-            const notebook = JSON.parse(localStorage.getItem('hm_notebook')) || [];
+            
+            // --- SỰ THAY ĐỔI DUY NHẤT LÀ Ở ĐÂY ---
+            // Thay vì lấy từ localStorage (bị lỗi rỗng trên ĐT), ta lấy từ Firebase (đã gán vào window.fullNotebook lúc bấm nút "Ôn tập")
+            const notebook = window.fullNotebook || []; 
             
             let distractors = notebook.filter(w => w.word !== currentWord.word).sort(() => 0.5 - Math.random()).slice(0, 3);
             let options = [currentWord, ...distractors].sort(() => 0.5 - Math.random());
             const labels = ['A', 'B', 'C', 'D'];
 
+            // Tối ưu thanh cuộn cho Mobile
             area.innerHTML = `
                 <div style="font-weight: bold; font-size: 20px; margin-bottom: 25px; text-align: center; color: var(--text-dark); position: relative;">
                     Từ <span style="color: var(--primary); font-size: 28px;">"${currentWord.word}"</span> có nghĩa là gì?
@@ -2318,7 +2367,7 @@
                        onclick="playVocabAudio('${currentWord.word.replace(/'/g, "\\'")}')"></i>
                 </div>
                 
-                <div style="display: flex; flex-direction: column; gap: 10px;"> 
+                <div style="display: flex; flex-direction: column; gap: 10px; max-height: 50vh; overflow-y: auto; padding-right: 5px;" class="custom-scrollbar"> 
                     ${options.map((opt, index) => {
                         // Tách dòng các nghĩa cho Quiz
                         const optFormatted = opt.meaning.split(' | ').map(m => `• ${m}`).join('<br>');
@@ -2342,7 +2391,6 @@
 
             // Tự động phát âm thanh sau 0.3 giây
             setTimeout(() => { playVocabAudio(currentWord.word); }, 300);
-            
         };
 
         // 7. HÀM CHECK ĐÁP ÁN
