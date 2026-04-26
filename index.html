@@ -1225,161 +1225,193 @@
             document.getElementById('dictation-fields').style.display = t==='dictation'?'block':'none';
             document.getElementById('quiz-fields').style.display = t==='quiz'?'block':'none';
         };
-        document.addEventListener('mouseup', async (e) => {
+        // --- XỬ LÝ ẨN TOOLTIP KHI CHẠM RA NGOÀI (Hỗ trợ PC & Mobile) ---
+        const closeTooltipEvent = (e) => {
             const tooltip = document.getElementById('translation-tooltip');
-            
+            // Nếu click trúng vào tooltip hoặc bất kỳ phần tử con nào bên trong thì không đóng
+            if (tooltip.contains(e.target)) return;
+            // Chỉ ẩn khi click ra hoàn toàn bên ngoài
+            tooltip.style.display = 'none';
+        };
+        document.addEventListener('mousedown', closeTooltipEvent);
+        document.addEventListener('touchstart', closeTooltipEvent, {passive: true});
+
+        // --- XỬ LÝ HIỆN TOOLTIP KHI BÔI ĐEN (Hỗ trợ PC & Mobile) ---
+        const showTooltipEvent = (e) => {
+            const tooltip = document.getElementById('translation-tooltip');
             // Nếu bấm vào bên trong tooltip thì không làm gì cả
             if (tooltip.contains(e.target)) return;
 
-            let selectedText = "";
+            // BỌC BẰNG SETTIMEOUT 250ms: Chờ hệ điều hành điện thoại quét khối chữ xong
+            setTimeout(async () => {
+                let selectedText = "";
+                let pageX = 0;
+                let pageY = 0;
 
-            // --- 1. LẤY CHỮ (Từ Input hoặc văn bản ngoài) ---
-            if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
-                const input = e.target;
-                if (input.selectionStart !== input.selectionEnd) {
-                    selectedText = input.value.substring(input.selectionStart, input.selectionEnd).trim();
+                // Lấy tọa độ thông minh: Phân biệt Chuột (PC) và Cảm ứng (Mobile)
+                if (e.type === 'touchend') {
+                    if (!e.changedTouches || e.changedTouches.length === 0) return;
+                    pageX = e.changedTouches[0].pageX;
+                    pageY = e.changedTouches[0].pageY;
+                } else {
+                    pageX = e.pageX;
+                    pageY = e.pageY;
                 }
-            } else {
-                const selection = window.getSelection();
-                if (selection.rangeCount === 0) return;
 
-                const range = selection.getRangeAt(0);
-                const container = document.createElement('div');
-                container.appendChild(range.cloneContents());
+                // --- 1. LẤY CHỮ (Từ Input hoặc văn bản ngoài) ---
+                if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                    const input = e.target;
+                    if (input.selectionStart !== input.selectionEnd) {
+                        selectedText = input.value.substring(input.selectionStart, input.selectionEnd).trim();
+                    }
+                } else {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount === 0) return;
 
-                // Loại bỏ nhãn đáp án thừa
-                container.querySelectorAll('.correct-hint').forEach(h => h.remove());
+                    const range = selection.getRangeAt(0);
+                    const container = document.createElement('div');
+                    container.appendChild(range.cloneContents());
 
-                let fullText = "";
-                const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
-                let node;
-                while(node = walker.nextNode()) {
-                    if (node.nodeType === Node.TEXT_NODE) fullText += node.textContent;
-                    else if (node.tagName === 'INPUT') fullText += ` ${node.getAttribute('data-ans') || ""} `;
+                    // Loại bỏ nhãn đáp án thừa
+                    container.querySelectorAll('.correct-hint').forEach(h => h.remove());
+
+                    let fullText = "";
+                    const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL, null, false);
+                    let node;
+                    while(node = walker.nextNode()) {
+                        if (node.nodeType === Node.TEXT_NODE) fullText += node.textContent;
+                        else if (node.tagName === 'INPUT') fullText += ` ${node.getAttribute('data-ans') || ""} `;
+                    }
+                    selectedText = fullText.replace(/[✓✔]/g, '').replace(/\s+/g, ' ').trim();
                 }
-                selectedText = fullText.replace(/[✓✔]/g, '').replace(/\s+/g, ' ').trim();
-            }
 
-            // Nếu không bôi đen gì hoặc chữ quá ngắn thì ẩn tooltip
-            if (!selectedText || selectedText.length < 2) {
-                tooltip.style.display = 'none';
-                return;
-            }
+                // Nếu không bôi đen gì hoặc chữ quá ngắn thì ẩn tooltip
+                if (!selectedText || selectedText.length < 2) {
+                    tooltip.style.display = 'none';
+                    return;
+                }
 
-            // --- 2. HIỂN THỊ TRẠNG THÁI CHỜ ---
-            tooltip.innerHTML = "⏳ Đang dịch...";
-            tooltip.style.display = 'flex';
-            tooltip.style.flexDirection = 'column';
-            tooltip.style.left = `${Math.min(window.innerWidth - 320, Math.max(10, e.pageX - 150))}px`;
-            tooltip.style.top = `${e.pageY - 80}px`;
+                // --- 2. HIỂN THỊ TRẠNG THÁI CHỜ ---
+                tooltip.innerHTML = "⏳ Đang dịch...";
+                tooltip.style.display = 'flex';
+                tooltip.style.flexDirection = 'column';
+                tooltip.style.left = `${Math.min(window.innerWidth - 320, Math.max(10, pageX - 150))}px`;
+                tooltip.style.top = `${Math.max(10, pageY - 80)}px`;
 
-            const words = selectedText.split(/\s+/);
+                const words = selectedText.split(/\s+/);
 
-            // --- 3. PHÂN LUỒNG XỬ LÝ ---
-            if (words.length === 1) {
-                // ==========================================
-                // CHẾ ĐỘ A: TỪ ĐIỂN (BÔI 1 TỪ)
-                // ==========================================
-                try {
-                    const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '');
-                    const dictUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`;
-                    const response = await fetch(dictUrl);
-                    const data = await response.json();
+                // --- 3. PHÂN LUỒNG XỬ LÝ ---
+                if (words.length === 1) {
+                    // ==========================================
+                    // CHẾ ĐỘ A: TỪ ĐIỂN (BÔI 1 TỪ)
+                    // ==========================================
+                    try {
+                        const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '');
+                        const dictUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`;
+                        const response = await fetch(dictUrl);
+                        const data = await response.json();
 
-                    if (data.title === "No Definitions Found" || !Array.isArray(data)) {
-                        // Nếu không thấy trong từ điển, dùng Google Translate
+                        if (data.title === "No Definitions Found" || !Array.isArray(data)) {
+                            // Nếu không thấy trong từ điển, dùng Google Translate
+                            const translated = await translateText(selectedText);
+                            tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
+                        } else {
+                            const entry = data[0];
+                            const phonetic = entry.phonetic || (entry.phonetics.find(p => p.text)?.text) || "";
+                            const audioSrc = entry.phonetics.find(p => p.audio !== "")?.audio || "";
+                            
+                            let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
+                            
+                            entry.meanings.slice(0, 3).forEach(m => {
+                                const type = m.partOfSpeech === 'noun' ? '(n)' : m.partOfSpeech === 'verb' ? '(v)' : m.partOfSpeech === 'adjective' ? '(adj)' : `(${m.partOfSpeech})`;
+                                m.definitions.slice(0, 2).forEach(def => {
+                                    meaningsHTML += `
+                                        <div class="meaning-choice-card" onclick="handleMeaningSelect(this)">
+                                            <div style="flex:1; font-size:13px; padding-right:10px; line-height:1.4 !important;">
+                                                <b style="color:var(--accent-yellow); font-style:italic;">${type}</b> 
+                                                <span class="def-text-span">${def.definition}</span>
+                                            </div>
+                                            <div class="custom-chk"><i class="fa-solid fa-check" style="color:white; display:none; font-size:12px;"></i></div>
+                                        </div>`;
+                                });
+                            });
+                            // ... (giữ nguyên phần trên của từ điển) ...
+                            meaningsHTML += `</div>`;
+
+                            tooltip.innerHTML = `
+                                <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
+                                    <div style="display: flex; align-items: center;">
+                                        <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
+                                        ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
+                                    </div>
+                                    <span style="color:#00b894; font-size:13px;">${phonetic}</span>
+                                </div>
+
+                                ${meaningsHTML}
+
+                                <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                    <input type="text" id="final-meaning-to-save" 
+                                           placeholder="✎ Nhập thêm nghĩa khác nếu có..." 
+                                           style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;"
+                                           onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
+                                    
+                                    <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" 
+                                            style="width: 100%; 
+                                                   background: linear-gradient(135deg, #00b894, #00cec9); 
+                                                   color: white; 
+                                                   border: none; 
+                                                   padding: 14px 20px; 
+                                                   border-radius: 14px; 
+                                                   font-weight: 800; 
+                                                   font-size: 15px; 
+                                                   letter-spacing: 0.5px; 
+                                                   cursor: pointer; 
+                                                   display: flex; 
+                                                   align-items: center; 
+                                                   justify-content: center; 
+                                                   gap: 8px; 
+                                                   box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4); 
+                                                   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
+                                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> 
+                                        <span>LƯU VÀO ĐÁM MÂY</span>
+                                    </button>
+                                </div>
+                            `;
+                            // Tự động dịch các tầng nghĩa sang tiếng Việt
+                            tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
+                                span.innerText = await translateText(span.innerText);
+                            });
+                        }
+                    } catch (err) {
                         const translated = await translateText(selectedText);
                         tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
-                    } else {
-                        const entry = data[0];
-                        const phonetic = entry.phonetic || (entry.phonetics.find(p => p.text)?.text) || "";
-                        const audioSrc = entry.phonetics.find(p => p.audio !== "")?.audio || "";
-                        
-                        let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
-                        
-                        entry.meanings.slice(0, 3).forEach(m => {
-                            const type = m.partOfSpeech === 'noun' ? '(n)' : m.partOfSpeech === 'verb' ? '(v)' : m.partOfSpeech === 'adjective' ? '(adj)' : `(${m.partOfSpeech})`;
-                            m.definitions.slice(0, 2).forEach(def => {
-                                meaningsHTML += `
-                                    <div class="meaning-choice-card" onclick="handleMeaningSelect(this)">
-                                        <div style="flex:1; font-size:13px; padding-right:10px; line-height:1.4 !important;">
-                                            <b style="color:var(--accent-yellow); font-style:italic;">${type}</b> 
-                                            <span class="def-text-span">${def.definition}</span>
-                                        </div>
-                                        <div class="custom-chk"><i class="fa-solid fa-check" style="color:white; display:none; font-size:12px;"></i></div>
-                                    </div>`;
-                            });
-                        });
-                        // ... (giữ nguyên phần trên của từ điển) ...
-                        meaningsHTML += `</div>`;
-
-                        tooltip.innerHTML = `
-                            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center;">
-                                    <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
-                                    ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
-                                </div>
-                                <span style="color:#00b894; font-size:13px;">${phonetic}</span>
-                            </div>
-
-                            ${meaningsHTML}
-
-                            <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
-                                <input type="text" id="final-meaning-to-save" 
-                                       placeholder="✎ Nhập thêm nghĩa khác nếu có..." 
-                                       style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;"
-                                       onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
-                                
-                                <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" 
-                                        style="width: 100%; 
-                                               background: linear-gradient(135deg, #00b894, #00cec9); 
-                                               color: white; 
-                                               border: none; 
-                                               padding: 14px 20px; 
-                                               border-radius: 14px; 
-                                               font-weight: 800; 
-                                               font-size: 15px; 
-                                               letter-spacing: 0.5px; 
-                                               cursor: pointer; 
-                                               display: flex; 
-                                               align-items: center; 
-                                               justify-content: center; 
-                                               gap: 8px; 
-                                               box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4); 
-                                               transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
-                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> 
-                                    <span>LƯU VÀO ĐÁM MÂY</span>
-                                </button>
-                            </div>
-                        `;
-                        // Tự động dịch các tầng nghĩa sang tiếng Việt
-                        tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
-                            span.innerText = await translateText(span.innerText);
-                        });
                     }
-                } catch (err) {
-                    const translated = await translateText(selectedText);
-                    tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
+                } else {
+                    // ==========================================
+                    // CHẾ ĐỘ B: DỊCH CÂU (BÔI NHIỀU TỪ)
+                    // ==========================================
+                    try {
+                        const translated = await translateText(selectedText);
+                        tooltip.innerHTML = `<div style="line-height:1.6; padding: 5px 0; font-size: 15px; color: white;">${translated}</div>`;
+                    } catch (err) {
+                        tooltip.innerText = "❌ Không thể dịch câu này.";
+                    }
                 }
-            } else {
-                // ==========================================
-                // CHẾ ĐỘ B: DỊCH CÂU (BÔI NHIỀU TỪ)
-                // ==========================================
-                try {
-                    const translated = await translateText(selectedText);
-                    tooltip.innerHTML = `<div style="line-height:1.6; padding: 5px 0; font-size: 15px; color: white;">${translated}</div>`;
-                } catch (err) {
-                    tooltip.innerText = "❌ Không thể dịch câu này.";
-                }
-            }
 
-            // --- 4. CĂN CHỈNH VỊ TRÍ TOOLTIP SAU KHI CÓ NỘI DUNG ---
-            setTimeout(() => {
-                const rect = tooltip.getBoundingClientRect();
-                tooltip.style.top = `${e.pageY - rect.height - 20}px`;
-            }, 150);
-        });
-        // Hàm hỗ trợ dịch thuật dùng chung (giữ nguyên logic lọc của bạn)
+                // --- 4. CĂN CHỈNH VỊ TRÍ TOOLTIP SAU KHI CÓ NỘI DUNG ---
+                setTimeout(() => {
+                    const rect = tooltip.getBoundingClientRect();
+                    tooltip.style.top = `${Math.max(10, pageY - rect.height - 20)}px`;
+                }, 150);
+
+            }, 250); // <-- 250ms chờ điện thoại highlight text
+        };
+
+        // Kích hoạt song song cho cả Chuột (PC) và Cảm ứng (Mobile)
+        document.addEventListener('mouseup', showTooltipEvent);
+        document.addEventListener('touchend', showTooltipEvent, {passive: true});
+
+        // Hàm hỗ trợ dịch thuật dùng chung (giữ nguyên)
         async function translateText(text) {
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(text)}`;
@@ -1391,19 +1423,6 @@
                 return "❌ Lỗi dịch";
             }
         }
-        // Click ra chỗ khác để đóng tooltip
-        document.addEventListener('mousedown', (e) => {
-            const tooltip = document.getElementById('translation-tooltip');
-            
-            // Nếu click trúng vào tooltip hoặc bất kỳ phần tử con nào bên trong (như nút loa)
-            // thì return luôn, không chạy lệnh ẩn (display = 'none')
-            if (tooltip.contains(e.target)) {
-                return; 
-            }
-
-            // Chỉ ẩn khi click ra hoàn toàn bên ngoài
-            tooltip.style.display = 'none';
-        });
         document.getElementById('upload-btn').onclick = async () => {
             const type = document.getElementById('admin-type').value; // 'dictation' hoặc 'quiz'
             const title = document.getElementById('admin-title').value;
