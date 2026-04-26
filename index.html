@@ -1241,26 +1241,48 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
                                     </div>`;
                             });
                         });
+                        // ... (giữ nguyên phần trên của từ điển) ...
                         meaningsHTML += `</div>`;
 
                         tooltip.innerHTML = `
-                            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center;">
-                                    <b style="color:var(--accent-yellow); font-size:18px;">${entry.word}</b>
+                                    <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
                                     ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
                                 </div>
                                 <span style="color:#00b894; font-size:13px;">${phonetic}</span>
                             </div>
+
                             ${meaningsHTML}
-                            <div style="margin-top: 15px; padding: 10px 0; border-top: 1px solid #444; display: flex; justify-content: center;">
+
+                            <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                <input type="text" id="final-meaning-to-save" 
+                                       placeholder="✎ Nhập thêm nghĩa khác nếu có..." 
+                                       style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;"
+                                       onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
+                                
                                 <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" 
-                                        style="width: 75%; background: var(--success); color: white; border: none; padding: 12px 20px; border-radius: 50px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); transition: all 0.2s ease;">
-                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px; margin: 0 !important;"></i> 
-                                    <span style="margin: 0 !important; line-height: 1;">LƯU VÀO SỔ TAY</span>
+                                        style="width: 100%; 
+                                               background: linear-gradient(135deg, #00b894, #00cec9); 
+                                               color: white; 
+                                               border: none; 
+                                               padding: 14px 20px; 
+                                               border-radius: 14px; 
+                                               font-weight: 800; 
+                                               font-size: 15px; 
+                                               letter-spacing: 0.5px; 
+                                               cursor: pointer; 
+                                               display: flex; 
+                                               align-items: center; 
+                                               justify-content: center; 
+                                               gap: 8px; 
+                                               box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4); 
+                                               transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
+                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> 
+                                    <span>LƯU VÀO ĐÁM MÂY</span>
                                 </button>
                             </div>
                         `;
-
                         // Tự động dịch các tầng nghĩa sang tiếng Việt
                         tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
                             span.innerText = await translateText(span.innerText);
@@ -1854,14 +1876,35 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
                     let html = "";
                     snap.forEach(docSnap => {
                         const item = docSnap.data();
+                        const docId = docSnap.id;
+    
+                        // 1. Tách nghĩa ra thành từng dòng, có dấu chấm tròn (Phòng hờ lỗi nếu meaning trống)
+                        const formattedMeaning = (item.meaning || "Chưa có nghĩa").split(' | ').map(m => `• ${m}`).join('<br>');
+
                         html += `
-                            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <b style="color: var(--primary); font-size: 16px;">${item.word}</b> 
-                                    <div style="font-size: 14px; color: #555;">${item.meaning}</div>
+                            <div class="notebook-item" style="margin-bottom: 12px; background: #fff; border-radius: 15px; border: 1px solid #eee; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative;">
+                                
+                                <i class="fa-solid fa-trash-can" 
+                                onclick="event.stopPropagation(); deleteFromNotebook('${docId}', '${item.word.replace(/'/g, "\\'")}')" 
+                                style="position: absolute; top: 15px; right: 45px; color: #ff7675; cursor: pointer; padding: 5px; z-index: 10; font-size: 14px;"
+                                title="Xóa từ này"></i>
+
+                                <div onclick="toggleNoteEditor('${docId}')" style="padding:15px; padding-right: 70px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                                    <div>
+                                        <b style="color:var(--primary); font-size:17px;">${item.word}</b> 
+                                        <div style="font-size:14.5px; color:#555; margin-top:6px; line-height: 1.6;">${formattedMeaning}</div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down" style="color:#ccc; font-size:12px;"></i>
                                 </div>
-                                <i class="fa-solid fa-trash" onclick="deleteFromNotebook('${docSnap.id}', '${item.word.replace(/'/g, "\\'")}')" 
-                                   style="color: var(--danger); cursor: pointer; padding: 8px;"></i>
+
+                                <div id="note-editor-${docId}" style="display:none; padding: 15px; background: #fdfae6; border-top: 1px solid #eee;">
+                                    <textarea id="extra-note-${docId}" placeholder="Thêm ví dụ hoặc ghi chú riêng của bạn..." 
+                                            style="width:100%; border: 1px solid #ddd; border-radius:10px; padding:10px; font-size:14px; min-height:80px;">${item.extraNotes || ''}</textarea>
+                                    <div style="display:flex; gap:10px; margin-top:10px;">
+                                        <button onclick="saveExtraNote('${docId}')" class="btn-main" style="padding:8px; font-size:13px; background:var(--success); margin:0; flex:1;">Lưu ghi chú</button>
+                                        <button onclick="deleteFromNotebook('${docId}', '${item.word.replace(/'/g, "\\'")}')" class="btn-main" style="padding:8px; font-size:13px; background:var(--danger); margin:0; flex:1;">Xóa từ</button>
+                                    </div>
+                                </div>
                             </div>`;
                     });
                     listCont.innerHTML = html;
@@ -1871,16 +1914,19 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
             }
         };
 
-        // 3. Hàm xóa từ khỏi Firebase
+        // 3. Hàm xóa từ khỏi Firebase (Xóa trực tiếp, không hỏi lại)
         window.deleteFromNotebook = async (docId, word) => {
-            if (confirm(`Xóa từ "${word}" khỏi sổ tay?`)) {
-                try {
-                    await deleteDoc(doc(db, "notebooks", docId));
-                    showBeautifulToast("Đã xóa!", "success");
-                    showNotebookModal(); // Load lại danh sách
-                } catch (e) {
-                    showBeautifulToast("Lỗi khi xóa!", "danger");
-                }
+            try {
+                // Xóa thẳng dữ liệu trên Firebase
+                await deleteDoc(doc(db, "notebooks", docId));
+                
+                // Báo Toast xanh mượt mà, nhắc luôn tên từ vừa xóa
+                showBeautifulToast(`Đã xóa từ "${word}"!`, "success");
+                
+                // Tự động tải lại danh sách để từ đó biến mất khỏi màn hình
+                showNotebookModal(); 
+            } catch (e) {
+                showBeautifulToast("Lỗi khi xóa!", "danger");
             }
         };
 
@@ -1921,25 +1967,32 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
             checkIcon.style.display = element.classList.contains('active') ? 'block' : 'none';
         };
 
-        // 2. Gộp tất cả các nghĩa đã chọn và Lưu
+        // 2. Gộp tất cả các nghĩa đã chọn + Nghĩa tự nhập và Lưu
         window.processSaveFromTooltip = (word) => {
-            // Lấy tất cả các thẻ đã được tích chọn
             const activeCards = document.querySelectorAll('.meaning-choice-card.active');
+            const customInputEl = document.getElementById('final-meaning-to-save');
+            const customInput = customInputEl ? customInputEl.value.trim() : "";
             
-            if (activeCards.length === 0) {
-                showBeautifulToast("Vui lòng tích chọn ít nhất một nghĩa!", "warning");
-                return;
-            }
-
-            // Duyệt qua từng thẻ để lấy: (Loại từ) + Nghĩa tiếng Việt
-            const selectedMeanings = Array.from(activeCards).map(card => {
+            // Lấy nghĩa từ các ô được tích
+            let selectedMeanings = Array.from(activeCards).map(card => {
                 const type = card.querySelector('b').innerText; // (n), (v)...
                 const text = card.querySelector('.def-text-span').innerText; // Nghĩa đã dịch
                 return `${type} ${text}`;
             });
 
-            // Gộp các nghĩa lại cách nhau bằng dấu chấm phẩy
-            const finalMeaning = selectedMeanings.join('; ');
+            // Nếu học sinh có tự gõ thêm nghĩa ở ô trống, thì đẩy thêm vào danh sách
+            if (customInput !== "") {
+                selectedMeanings.push(`(Khác) ${customInput}`);
+            }
+
+            // Cảnh báo nếu không tích chọn gì và cũng không gõ gì
+            if (selectedMeanings.length === 0) {
+                showBeautifulToast("Vui lòng tích chọn nghĩa hoặc tự nhập thêm!", "warning");
+                return;
+            }
+
+            // Gộp các nghĩa lại, cách nhau bằng " | " để lát nữa tách ra xuống dòng
+            const finalMeaning = selectedMeanings.join(' | ');
 
             // Gọi hàm lưu Firebase
             saveToNotebook(word, finalMeaning);
@@ -2077,14 +2130,20 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;"> 
-                    ${options.map((opt, index) => `
-                        <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word.replace(/'/g, "\\'")}', '${currentWord.word.replace(/'/g, "\\'")}')">
-                            <span style="background: #f1f2f6; color: var(--primary); padding: 5px 0; border-radius: 8px; font-weight: bold; min-width: 30px; text-align: center; flex-shrink: 0;">
+                    ${options.map((opt, index) => {
+                        // Tách dòng các nghĩa cho Quiz
+                        const optFormatted = opt.meaning.split(' | ').map(m => `• ${m}`).join('<br>');
+                        
+                        return `
+                        <button class="option-btn" onclick="checkVocabAnswer(this, '${opt.word.replace(/'/g, "\\'")}', '${currentWord.word.replace(/'/g, "\\'")}')"
+                                style="align-items: flex-start; padding: 15px;">
+                            <span style="background: #f1f2f6; color: var(--primary); padding: 5px 0; border-radius: 8px; font-weight: bold; width: 30px; text-align: center; flex-shrink: 0; margin-top: 2px;">
                                 ${labels[index]}
                             </span>
-                            <span>${opt.meaning}</span>
+                            <span style="line-height: 1.6; font-size: 14.5px; text-align: left;">${optFormatted}</span>
                         </button>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
                 
                 <p style="text-align: right; margin-top: 20px; font-size: 14px; color: #a4b0be; font-weight: 500;">
