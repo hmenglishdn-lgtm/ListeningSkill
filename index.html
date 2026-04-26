@@ -123,6 +123,8 @@
             color: var(--text-dark);
             line-height: 1.4;
             gap: 15px; /* Khoảng cách giữa chữ A,B,C,D và nội dung */
+            user-select: text;
+            -webkit-user-select: text;
         }
         
         .option-btn:hover {
@@ -130,6 +132,14 @@
             background: #f8f9fa;
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        /* Khóa nút nhưng vẫn cho bôi đen chữ */
+        .option-btn.locked {
+            cursor: text; 
+        }
+        .option-btn.locked:hover {
+            transform: none; /* Tắt hiệu ứng nảy lên */
+            box-shadow: none;
         }
         .quiz-img-container { margin: 15px 0; display: none; text-align: center; }
         .quiz-img-container img { max-width: 100%; border-radius: 15px; border: 3px solid var(--accent-yellow); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
@@ -977,7 +987,7 @@
                 imgCont.style.display = 'none'; 
             }
 
-            // --- BƯỚC 3: HIỂN THỊ CÂU HỎI & ĐÁP ÁN (FIX LẶP TẠI ĐÂY) ---
+// --- BƯỚC 3: HIỂN THỊ CÂU HỎI & ĐÁP ÁN (FIX LẶP TẠI ĐÂY) ---
             if (d.isGroup && d.questions) {
                 // CHỈ CHẠY 1 VÒNG LẶP DUY NHẤT CHO DẠNG NHÓM (PART 3, 4)
                 d.questions.forEach((q, qIdx) => {
@@ -1009,16 +1019,34 @@
                             const btn = document.createElement('button');
                             btn.className = 'option-btn';
                             btn.innerHTML = `<b>${o}.</b> ${parseTextWithBlanks(optContent)}`;
+                            
+                            // KHAI BÁO BỘ ĐẾM THỜI GIAN ĐỂ BẮT KÍCH ĐÚP
+                            let clickTimer = null;
+
                             btn.onclick = (e) => {
                                 if(e.target.tagName === 'INPUT') return;
-                                optSide.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
-                                btn.classList.add('selected');
-                                if(o === q.correct) btn.classList.add('correct');
-                                else {
-                                    btn.classList.add('wrong');
-                                    Array.from(optSide.querySelectorAll('.option-btn')).forEach(b => {
-                                        if(b.innerHTML.includes(`<b>${q.correct}.</b>`)) b.classList.add('correct');
-                                    });
+                                if(window.getSelection().toString().trim().length > 0) return;
+
+                                if (e.detail === 1) {
+                                    clickTimer = setTimeout(() => {
+                                        if(window.getSelection().toString().trim().length > 0) return;
+                                        
+                                        // KIỂM TRA NÚT ĐÃ KHÓA CHƯA
+                                        if(btn.classList.contains('locked')) return; 
+
+                                        optSide.querySelectorAll('.option-btn').forEach(b => b.classList.add('locked'));
+                                        btn.classList.add('selected');
+                                        if(o === q.correct) btn.classList.add('correct');
+                                        else {
+                                            btn.classList.add('wrong');
+                                            Array.from(optSide.querySelectorAll('.option-btn')).forEach(b => {
+                                                if(b.innerHTML.includes(`<b>${q.correct}.</b>`)) b.classList.add('correct');
+                                            });
+                                        }
+                                    }, 250); 
+                                } 
+                                else if (e.detail >= 2) {
+                                    clearTimeout(clickTimer);
                                 }
                             };
                             optSide.appendChild(btn);
@@ -1037,25 +1065,41 @@
                         const btn = document.createElement('button');
                         btn.className = 'option-btn';
                         btn.innerHTML = `${o}. ${parseTextWithBlanks(d['opt'+o])}`;
+                        
+                        // KHAI BÁO BỘ ĐẾM THỜI GIAN ĐỂ BẮT KÍCH ĐÚP
+                        let clickTimer = null;
+
                         btn.onclick = (e) => {
                             if(e.target.tagName === 'INPUT') return;
-                            container.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; b.classList.remove('selected'); });
-                            btn.classList.add('selected');
-                            if(o === d.correct) btn.classList.add('correct'); 
-                            else {
-                                btn.classList.add('wrong');
-                                container.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(o)) b.classList.add('correct'); });
-                                // Fix lỗi hiển thị đáp án đúng cho câu đơn
-                                container.querySelectorAll('.option-btn').forEach(b => {
-                                    if(b.innerHTML.trim().startsWith(d.correct + '.')) b.classList.add('correct');
-                                });
+                            if(window.getSelection().toString().trim().length > 0) return;
+
+                            if (e.detail === 1) {
+                                clickTimer = setTimeout(() => {
+                                    if(window.getSelection().toString().trim().length > 0) return;
+                                    
+                                    // KIỂM TRA NÚT ĐÃ KHÓA CHƯA
+                                    if(btn.classList.contains('locked')) return; 
+
+                                    container.querySelectorAll('.option-btn').forEach(b => { b.classList.add('locked'); b.classList.remove('selected'); });
+                                    btn.classList.add('selected');
+                                    if(o === d.correct) btn.classList.add('correct'); 
+                                    else {
+                                        btn.classList.add('wrong');
+                                        container.querySelectorAll('.option-btn').forEach(b => { if(b.innerHTML.startsWith(o)) b.classList.add('correct'); });
+                                        container.querySelectorAll('.option-btn').forEach(b => {
+                                            if(b.innerHTML.trim().startsWith(d.correct + '.')) b.classList.add('correct');
+                                        });
+                                    }
+                                }, 250);
+                            }
+                            else if (e.detail >= 2) {
+                                clearTimeout(clickTimer);
                             }
                         };
                         container.appendChild(btn);
                     }
                 });
             }
-
             // --- BƯỚC 4: LOGIC KIỂM TRA ĐIỀN TỪ ---
             const checkBlank = (str) => str && str.includes('[');
             let hasBlanks = false;
