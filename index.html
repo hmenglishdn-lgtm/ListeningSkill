@@ -622,7 +622,7 @@
 
         const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app); const storage = getStorage(app);
-        const ADMIN_EMAILS = ["hmenglishdn@gmail.com", "thinhphilip,icdanang@gmail.com"];
+        const ADMIN_EMAILS = ["hmenglishdn@gmail.com", "thinhphilip.icdanang@gmail.com"];
         setPersistence(auth, browserSessionPersistence);
         // Hàm sắp xếp thông minh: Ưu tiên Nhóm đề, sau đó mới đến Số thứ tự
         const smartSort = (a, b) => {
@@ -671,13 +671,13 @@
         document.getElementById('confirm-pass-btn').onclick = async () => {
             try { await updatePassword(auth.currentUser, document.getElementById('new-password').value); alert("Xong!"); closePass(); showTab(null, 'study'); } catch(e) { alert("Vui lòng đăng nhập lại!"); }
         };
-        document.getElementById('confirm-reg-btn').onclick = async () => {
+document.getElementById('confirm-reg-btn').onclick = async () => {
             const e = document.getElementById('reg-email').value.trim();
             const p = document.getElementById('reg-password').value.trim();
             const btn = document.getElementById('confirm-reg-btn');
             
             if(!e || !p) { 
-                alert("Vui lòng nhập đầy đủ thông tin!"); 
+                showBeautifulToast("Vui lòng nhập đầy đủ thông tin!", "warning"); 
                 return; 
             }
 
@@ -689,53 +689,68 @@
                 const uc = await createUserWithEmailAndPassword(auth, e, p);
                 const uid = uc.user.uid;
 
-                // 2. HIỂN THỊ THÔNG BÁO NGAY (Để người dùng thấy kết quả trước)
+                // 2. HIỂN THỊ THÔNG BÁO ĐĂNG KÝ MỚI THÀNH CÔNG
                 document.getElementById('reg-modal').style.display = 'none';
                 const resModal = document.getElementById('result-modal');
                 document.getElementById('result-icon').innerText = "⏳";
                 document.getElementById('result-title').innerText = "Đã nhận yêu cầu!";
                 document.getElementById('result-stats').innerText = "";
-                document.getElementById('result-msg').innerHTML = "Đã nhận yêu cầu, chờ mấy thầy duyệt nhé :D";
+                document.getElementById('result-msg').innerHTML = "Yêu cầu đã được gửi đi.<br>Chờ thầy Thịnh duyệt nhé :D";
                 resModal.style.display = 'block';
 
-                // 3. Ghi vào Firestore (Dùng try-catch riêng để nếu lỗi DB vẫn không làm treo giao diện)
-                try {
-                    await setDoc(doc(db, "users", uid), { 
-                        email: e, 
-                        role: "student", 
-                        status: "pending", 
-                        createdAt: new Date().getTime(), 
-                        startDate: null 
-                    });
-                    console.log("Firestore đã ghi nhận user mới.");
-                } catch (dbErr) {
-                    console.error("Lỗi Firestore:", dbErr);
-                }
+                // Ghi vào Firestore
+                await setDoc(doc(db, "users", uid), { 
+                    email: e, 
+                    role: "student", 
+                    status: "pending", 
+                    createdAt: new Date().getTime(), 
+                    startDate: null 
+                });
 
-                // 4. Đăng xuất và dọn dẹp sau 3 giây
+                // Tự động logout sau 4 giây
                 setTimeout(async () => {
                     await signOut(auth);
                     resModal.style.display = 'none';
-                    document.getElementById('reg-email').value = "";
-                    document.getElementById('reg-password').value = "";
-                    btn.innerText = "Gửi Yêu Cầu";
-                    btn.disabled = false;
-                    // Buộc quay lại màn hình login
-                    document.getElementById('auth-screen').style.display = 'block';
-                    document.getElementById('main-app').style.display = 'none';
+                    resetRegInputs(btn);
                 }, 4000);
 
             } catch(err) { 
-                btn.innerText = "Gửi Yêu Cầu";
-                btn.disabled = false;
+                // --- PHẦN XỬ LÝ LỖI EMAIL ĐÃ TỒN TẠI BẰNG BẢNG THÔNG BÁO ---
                 if (err.code === 'auth/email-already-in-use') {
-                    alert("Email này có rồi nhé, đợi mấy thầy duyệt nhé.");
+                    // Đóng modal đăng ký
+                    document.getElementById('reg-modal').style.display = 'none';
+                    
+                    // Hiển thị bảng thông báo kết quả nhưng đổi nội dung
+                    const resModal = document.getElementById('result-modal');
+                    document.getElementById('result-icon').innerText = "⚠️";
+                    document.getElementById('result-title').innerText = "Email đã tồn tại!";
+                    document.getElementById('result-stats').innerText = "";
+                    document.getElementById('result-msg').innerHTML = "Email này đã được đăng ký trước đó.<br>Vui lòng kiểm tra lại hoặc liên hệ thầy Thịnh nhé!";
+                    resModal.style.display = 'block';
+
+                    // Sau 4 giây thì đóng bảng để học sinh thực hiện lại
+                    setTimeout(() => {
+                        resModal.style.display = 'none';
+                        resetRegInputs(btn);
+                        // Hiện lại màn hình login
+                        document.getElementById('auth-screen').style.display = 'block';
+                    }, 4000);
+
                 } else {
-                    alert("Lỗi: " + err.message);
+                    btn.innerText = "Gửi Yêu Cầu";
+                    btn.disabled = false;
+                    showBeautifulToast("Lỗi: " + err.message, "danger");
                 }
             }
         };
-        // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
+
+        // Hàm phụ để dọn dẹp form đăng ký
+        function resetRegInputs(btn) {
+            document.getElementById('reg-email').value = "";
+            document.getElementById('reg-password').value = "";
+            btn.innerText = "Gửi Yêu Cầu";
+            btn.disabled = false;
+        }        // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
         document.getElementById('confirm-forgot-btn').onclick = async () => {
             const emailInput = document.getElementById('forgot-email');
             const email = emailInput.value.trim();
@@ -2147,4 +2162,4 @@
         };
     </script>
 </body>
-</html>v
+</html>
