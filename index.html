@@ -1877,21 +1877,30 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
                     snap.forEach(docSnap => {
                         const item = docSnap.data();
                         const docId = docSnap.id;
-    
-                        // 1. Tách nghĩa ra thành từng dòng, có dấu chấm tròn (Phòng hờ lỗi nếu meaning trống)
+                        
                         const formattedMeaning = (item.meaning || "Chưa có nghĩa").split(' | ').map(m => `• ${m}`).join('<br>');
 
                         html += `
                             <div class="notebook-item" style="margin-bottom: 12px; background: #fff; border-radius: 15px; border: 1px solid #eee; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative;">
                                 
                                 <i class="fa-solid fa-trash-can" 
-                                onclick="event.stopPropagation(); deleteFromNotebook('${docId}', '${item.word.replace(/'/g, "\\'")}')" 
-                                style="position: absolute; top: 15px; right: 45px; color: #ff7675; cursor: pointer; padding: 5px; z-index: 10; font-size: 14px;"
-                                title="Xóa từ này"></i>
+                                   onclick="event.stopPropagation(); deleteFromNotebook('${docId}', '${item.word.replace(/'/g, "\\'")}')" 
+                                   style="position: absolute; top: 15px; right: 45px; color: #ff7675; cursor: pointer; padding: 5px; z-index: 10; font-size: 14px;"
+                                   title="Xóa từ này"></i>
 
                                 <div onclick="toggleNoteEditor('${docId}')" style="padding:15px; padding-right: 70px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
                                     <div>
-                                        <b style="color:var(--primary); font-size:17px;">${item.word}</b> 
+                                        <div style="display: flex; align-items: center;">
+                                            <b style="color:var(--primary); font-size:17px;">${item.word}</b> 
+                                            
+                                            <i class="fa-solid fa-volume-high dict-speaker" 
+                                               onclick="event.stopPropagation(); playVocabAudio('${item.word.replace(/'/g, "\\'")}')" 
+                                               style="color: #a2e043; margin-left: 10px; font-size: 18px; cursor: pointer; transition: 0.2s;"
+                                               onmouseover="this.style.transform='scale(1.2)'" 
+                                               onmouseout="this.style.transform='scale(1)'"
+                                               title="Nghe phát âm"></i>
+                                        </div>
+
                                         <div style="font-size:14.5px; color:#555; margin-top:6px; line-height: 1.6;">${formattedMeaning}</div>
                                     </div>
                                     <i class="fa-solid fa-chevron-down" style="color:#ccc; font-size:12px;"></i>
@@ -1899,7 +1908,7 @@ document.getElementById('confirm-reg-btn').onclick = async () => {
 
                                 <div id="note-editor-${docId}" style="display:none; padding: 15px; background: #fdfae6; border-top: 1px solid #eee;">
                                     <textarea id="extra-note-${docId}" placeholder="Thêm ví dụ hoặc ghi chú riêng của bạn..." 
-                                            style="width:100%; border: 1px solid #ddd; border-radius:10px; padding:10px; font-size:14px; min-height:80px;">${item.extraNotes || ''}</textarea>
+                                              style="width:100%; border: 1px solid #ddd; border-radius:10px; padding:10px; font-size:14px; min-height:80px;">${item.extraNotes || ''}</textarea>
                                     <div style="display:flex; gap:10px; margin-top:10px;">
                                         <button onclick="saveExtraNote('${docId}')" class="btn-main" style="padding:8px; font-size:13px; background:var(--success); margin:0; flex:1;">Lưu ghi chú</button>
                                         <button onclick="deleteFromNotebook('${docId}', '${item.word.replace(/'/g, "\\'")}')" class="btn-main" style="padding:8px; font-size:13px; background:var(--danger); margin:0; flex:1;">Xóa từ</button>
