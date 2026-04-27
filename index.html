@@ -974,7 +974,42 @@
         };
 
         const parseTextWithBlanks = (text) => (text || "").replace(/\[(.*?)\]/g, (m, w) => `<span class="blank-wrapper"><input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}"><span class="correct-hint"></span></span>`);
+        // --- BẮT ĐẦU: CODE LƯU TRẠNG THÁI BÀI TẬP ---
+        window.markLessonAsPassed = async (lessonId) => {
+            if (!auth.currentUser) return;
+            const uid = auth.currentUser.uid;
+            const userRef = doc(db, "users", uid);
 
+            try {
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    const userData = snap.data();
+                    let passedLessons = userData.passedLessons || [];
+                    if (!passedLessons.includes(lessonId)) {
+                        passedLessons.push(lessonId);
+                        await updateDoc(userRef, { passedLessons: passedLessons });
+                        window.updateSelectUI(lessonId);
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi:", err);
+            }
+        };
+
+        window.updateSelectUI = (lessonId) => {
+            const selects = ['lesson-select', 'quiz-select'];
+            selects.forEach(selectId => {
+                const el = document.getElementById(selectId);
+                if (el) {
+                    Array.from(el.options).forEach(opt => {
+                        if (opt.value === lessonId && !opt.text.includes('✅')) {
+                            opt.text = "✅ " + opt.text;
+                        }
+                    });
+                }
+            });
+        };
+        // --- KẾT THÚC: CODE LƯU TRẠNG THÁI BÀI TẬP ---
         // --- TAB 1 ---
         window.loadLesson = (id) => {
             const d = allLessons.find(l => l.id === id); if(!d) return;
@@ -1216,6 +1251,10 @@
                     resTitle.innerText = "Xuất Sắc!";
                     resTitle.style.color = "var(--success)";
                     resMsg.innerText = "Quá tốt, bạn đang tiến bộ theo từng giờ!";
+                    // --- ĐOẠN CODE MỚI THÊM VÀO ĐỂ LƯU BÀI PASS ---
+                    const currentLessonId = isQuiz ? document.getElementById('quiz-select').value : document.getElementById('lesson-select').value;
+                    if(currentLessonId) window.markLessonAsPassed(currentLessonId);
+                    // ----------------------------------------------
                 } else {
                     resIcon.innerText = "✍️";
                     resTitle.innerText = "Cố gắng thêm chút nữa!";
@@ -1884,9 +1923,15 @@
                         newLessons.push(data);
                     });
 
+                    // --- ĐOẠN CODE MỚI LẤY DANH SÁCH PASS (ĐIỀN TỪ) ---
+                    const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+                    const passedList = userSnap.exists() ? (userSnap.data().passedLessons || []) : [];
+
                     newLessons.sort(window.smartSort).forEach(d => {
-                        sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+                        const isPassed = passedList.includes(d.id) ? "✅ " : "";
+                        sel.innerHTML += `<option value='${d.id}'>${isPassed}${d.title}</option>`;
                     });
+                    // --------------------------------------------------
 
                     if (snap.docs.length === ITEMS_PER_PAGE) {
                         sel.innerHTML += `<option value="LOAD_MORE" style="font-weight: bold; color: var(--success); background: #e8f8f5;">⬇️ Tải thêm câu hỏi...</option>`;
@@ -2000,7 +2045,7 @@
             if (currentValue && currentValue !== "LOAD_MORE") examSel.value = currentValue;
         };
 
-        window.filterQuizByExam = () => {
+        window.filterQuizByExam = async () => {
             const examCode = document.getElementById('exam-filter-quiz').value;
             const quizSel = document.getElementById('quiz-select');
             if (examCode === "LOAD_MORE") {
@@ -2020,10 +2065,16 @@
                 const numB = parseInt(b.displayTitle.split('-')[0]) || 0;
                 return numA - numB;
             });
+            // --- ĐOẠN CODE MỚI LẤY DANH SÁCH PASS (TRẮC NGHIỆM) ---
+            const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+            const passedList = userSnap.exists() ? (userSnap.data().passedLessons || []) : [];
+
             questions.forEach(d => {
-                const prefix = examCode === "Mã đề khác" ? "" : "Câu ";
-                quizSel.innerHTML += `<option value='${d.id}'>${prefix}${d.displayTitle}</option>`;
+                const prefix = (examCode === "Mã đề khác" || examCode === "Khác") ? "" : "Câu ";
+                const isPassed = passedList.includes(d.id) ? "✅ " : "";
+                quizSel.innerHTML += `<option value='${d.id}'>${isPassed}${prefix}${d.displayTitle}</option>`;
             });
+            // ------------------------------------------------------
         };
 
         window.renderQuizExamSelect = (hasMore) => {
