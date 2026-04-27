@@ -527,15 +527,16 @@
                         <button class="speed-btn" onclick="changeSpeed(1.1, 'player', this)">1.1x</button>
                     </div>
                 </div>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <select id="level-filter" onchange="filterLessonsByLevel()">
-                        <option value="">Cấp độ</option>
+                <div style="display:flex; gap:10px; margin-top:15px; align-items: center; flex-wrap: wrap;">
+                    <select id="level-filter" onchange="filterLessonsByLevel()" style="flex: 1; margin-bottom: 0;">
+                        <option value="">-- Cấp độ --</option>
                         <option value="Co_ban">Cơ bản</option>
                         <option value="Trung_cap">Trung cấp</option>
                         <option value="Nang_cao">Nâng cao</option>
                     </select>
-                    <select id="lesson-select" onchange="loadLesson(this.value)">
-                        <option value="">Chọn bài</option>
+                    
+                    <select id="lesson-select" onchange="loadLesson(this.value)" style="flex: 1; margin-bottom: 0;">
+                        <option value="">-- Chọn câu hỏi --</option>
                     </select>
                 </div>
                 
@@ -567,7 +568,21 @@
                         <button class="speed-btn" onclick="changeSpeed(1.1, 'player-quiz', this)">1.1x</button>
                     </div>
                 </div>
-                <div style="display:flex; gap:10px; margin-top:15px;"><select id="part-filter" onchange="filterQuizByPart()"><option value="">Chọn Part</option><option value="Part1">Part 1</option><option value="Part2">Part 2</option><option value="Part3">Part 3</option><option value="Part4">Part 4</option></select><select id="quiz-select" onchange="loadQuiz(this.value)"><option value="">Chọn câu hỏi</option></select></div>
+                <div style="display:flex; gap:10px; margin-top:15px; align-items: center; flex-wrap: wrap;">
+                    <select id="part-filter" onchange="fetchQuizBatch()" style="flex: 1; margin-bottom: 0;">
+                        <option value="">Chọn Part</option>
+                        <option value="Part1">Part 1</option>
+                        <option value="Part2">Part 2</option>
+                        <option value="Part3">Part 3</option>
+                        <option value="Part4">Part 4</option>
+                    </select>
+                    <select id="exam-filter-quiz" onchange="filterQuizByExam()" style="flex: 1; margin-bottom: 0; display: none;">
+                        <option value="">-- Chọn Mã Đề --</option>
+                    </select>
+                    <select id="quiz-select" onchange="loadQuiz(this.value)" style="flex: 1; margin-bottom: 0; display: none;">
+                        <option value="">-- Chọn câu hỏi --</option>
+                    </select>
+                </div>             
                 <div id="quiz-area">Hãy chọn câu hỏi...</div>
                 <div id="quiz-image-container" class="quiz-img-container"><img id="quiz-image-display" src=""></div>
                 <div id="quiz-options-container" class="quiz-options"></div>
@@ -661,8 +676,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where, enableIndexedDbPersistence, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
         const app = initializeApp(firebaseConfig); 
         const auth = getAuth(app); 
@@ -707,7 +722,13 @@
         // Quan trọng: Đẩy vào window để các hàm khác luôn thấy nó
         window.smartSort = smartSort;
             let allLessons = []; let currentEditId = null;
-            let isDataLoaded = false;
+
+            // --- BIẾN LAZYLOAD SERVER-SIDE ---
+            window.lastVisibleStudy = null; 
+            window.lastVisibleQuiz = null;  
+            window.currentStudyGroups = {}; 
+            window.currentQuizGroups = {};
+            const ITEMS_PER_PAGE = 50;        
         // --- AUTH LOGIC ---
         document.getElementById('login-btn').onclick = async () => {
             const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
@@ -916,16 +937,17 @@
                     loadingOverlay.style.display = 'none';
 
                     // --- 2. CHẠY NGẦM VIỆC TẢI DỮ LIỆU PHÍA SAU (Không có await) ---
-                    const dataPromises = [fetchLessons()];
+                    const dataPromises = []; // Để trống, không bắt học viên tải bài học ngay lúc này
+
                     if (ADMIN_EMAILS.includes(user.email)) {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
                         dataPromises.push(fetchAdminData()); 
+                        dataPromises.push(fetchAllForAdmin()); // Admin thì vẫn cần tải hết để quản lý
                     } else {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
                     }
 
-                    Promise.all(dataPromises); 
-
+                    Promise.all(dataPromises);
                 } catch (error) {
                     console.error("Lỗi xác thực:", error);
                     loadingOverlay.style.display = 'none'; // Lỗi cũng tắt loading để ko bị treo
@@ -938,25 +960,18 @@
                 loadingOverlay.style.display = 'none';
             }
         });
-        async function fetchLessons() {
+        window.fetchAllForAdmin = async () => {
             try {
                 const snap = await getDocs(query(collection(db, "lessons"), orderBy("createdAt", "desc")));
                 allLessons = []; 
                 snap.forEach(d => allLessons.push({ ...d.data(), id: d.id }));
                 
-                isDataLoaded = true;
-
-                // Cập nhật Selectbox
-                filterLessonsByLevel(); 
-                filterQuizByPart();
-                
-                if (ADMIN_EMAILS.includes(auth.currentUser?.email)) fetchAdminLessons();
-                
-                console.log("Đã tải xong " + allLessons.length + " bài học.");
+                // Gọi hàm phân loại danh mục bên trang Admin
+                if (typeof fetchAdminLessons === "function") fetchAdminLessons();
             } catch (err) {
-                console.error("Lỗi tải bài học:", err);
+                console.error("Lỗi tải data Admin:", err);
             }
-        }
+        };
 
         const parseTextWithBlanks = (text) => (text || "").replace(/\[(.*?)\]/g, (m, w) => `<span class="blank-wrapper"><input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}"><span class="correct-hint"></span></span>`);
 
@@ -1822,62 +1837,241 @@
             }
         };
         // --- COMMON ---
-        window.showTab = (e, id) => { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.querySelectorAll('.tab-nav .btn-main').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; if(e) e.currentTarget.classList.add('active'); else document.getElementById('tab-study-btn').classList.add('active'); };
-        window.filterLessonsByLevel = () => {
+                window.showTab = (e, id) => { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.querySelectorAll('.tab-nav .btn-main').forEach(b => b.classList.remove('active')); document.getElementById(id).style.display = 'block'; if(e) e.currentTarget.classList.add('active'); else document.getElementById('tab-study-btn').classList.add('active'); };
+        // ==========================================
+        // 1. LOGIC CHO ĐIỀN TỪ (GIỮ NGUYÊN LAZYLOAD PHẲNG)
+        // ==========================================
+        window.filterLessonsByLevel = async (isLoadMore = false) => {
             const lvl = document.getElementById('level-filter').value;
             const sel = document.getElementById('lesson-select');
-            sel.innerHTML = '<option value="">Chọn bài học</option>';
-            
-            if (!lvl) return;
 
-            // KIỂM TRA TRẠNG THÁI TẢI
-            if (!isDataLoaded) {
-                sel.innerHTML = '<option value="">⏳ Đang tải dữ liệu, vui lòng chờ...</option>';
+            if (!lvl) {
+                sel.innerHTML = '<option value="">Chọn bài học</option>';
                 return;
             }
 
-            // Lọc và Sắp xếp theo Tiêu đề A-Z
-            const filtered = allLessons
-                .filter(l => l.type !== 'quiz' && l.level === lvl)
-                .sort(smartSort); 
+            if (!isLoadMore) {
+                sel.innerHTML = '<option value="">⏳ Đang tải...</option>';
+                window.lastVisibleStudy = null; 
+            } else {
+                const optLoad = sel.querySelector('option[value="LOAD_MORE"]');
+                if(optLoad) optLoad.remove();
+                sel.innerHTML += '<option value="LOADING" disabled>⏳ Đang tải thêm...</option>';
+            }
 
-            if (filtered.length === 0) {
-                sel.innerHTML = '<option value="">Không có bài học cho cấp độ này</option>';
+            try {
+                let q = query(collection(db, "lessons"), 
+                    where("type", "==", "dictation"), 
+                    where("level", "==", lvl), 
+                    orderBy("createdAt", "desc"), 
+                    ...(window.lastVisibleStudy ? [startAfter(window.lastVisibleStudy)] : []),
+                    limit(ITEMS_PER_PAGE)
+                );
+
+                const snap = await getDocs(q);
+                const optLoading = sel.querySelector('option[value="LOADING"]');
+                if(optLoading) optLoading.remove();
+
+                if (!isLoadMore) sel.innerHTML = '<option value="">Chọn bài học</option>';
+
+                if (!snap.empty) {
+                    window.lastVisibleStudy = snap.docs[snap.docs.length - 1]; 
+                    
+                    let newLessons = [];
+                    snap.forEach(d => {
+                        const data = { ...d.data(), id: d.id };
+                        if (!allLessons.find(l => l.id === data.id)) allLessons.push(data); 
+                        newLessons.push(data);
+                    });
+
+                    newLessons.sort(window.smartSort).forEach(d => {
+                        sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+                    });
+
+                    if (snap.docs.length === ITEMS_PER_PAGE) {
+                        sel.innerHTML += `<option value="LOAD_MORE" style="font-weight: bold; color: var(--success); background: #e8f8f5;">⬇️ Tải thêm câu hỏi...</option>`;
+                    }
+                } else if (!isLoadMore) {
+                    sel.innerHTML = '<option value="">Chưa có bài học nào</option>';
+                }
+            } catch (err) { console.error(err); }
+        };
+
+        // Hàm bổ trợ cho nút "Tải thêm" trong select Điền từ
+        window.loadMoreLessons = () => window.filterLessonsByLevel(true);
+
+        // Cập nhật lại hàm loadLesson để bắt sự kiện Load More cho Điền từ
+        const originalLoadLesson = window.loadLesson;
+        window.loadLesson = (id) => {
+            if (id === "LOAD_MORE") {
+                document.getElementById('lesson-select').value = ""; 
+                window.loadMoreLessons();
+                return;
+            }
+            // Gọi lại logic hiển thị bài học gốc
+            const d = allLessons.find(l => l.id === id); if(!d) return;
+            document.getElementById('translate-panel').style.display = 'none'; 
+            document.getElementById('vocab-panel').style.display = 'none';
+            const p = document.getElementById('player'); p.src = d.audioUrl; p.play();
+            document.getElementById('exercise-area').innerHTML = parseTextWithBlanks(d.script);
+            document.getElementById('translate-panel').innerText = d.translation || "---";
+            document.getElementById('vocab-panel').innerText = d.vocabulary || "---";
+            document.getElementById('score-display').style.display = 'none';
+            document.getElementById('next-lesson-btn').style.display = 'none';
+        };
+        // ==========================================
+        // 2. LOGIC CHO TRẮC NGHIỆM (GOM NHÓM THEO MÃ ĐỀ)
+        // ==========================================
+        window.fetchQuizBatch = async (isLoadMore = false) => {
+            const part = document.getElementById('part-filter').value;
+            const examSel = document.getElementById('exam-filter-quiz');
+            const quizSel = document.getElementById('quiz-select');
+
+            if (!part) {
+                examSel.style.display = 'none';
+                quizSel.style.display = 'none';
                 return;
             }
 
-            filtered.forEach(d => {
-                sel.innerHTML += `<option value='${d.id}'>${d.title}</option>`;
+            if (!isLoadMore) {
+                window.lastVisibleQuiz = null;
+                window.currentQuizGroups = {}; 
+                examSel.innerHTML = '<option value="">⏳ Đang gom nhóm đề...</option>';
+                examSel.style.display = 'block';
+                quizSel.style.display = 'none';
+            } else {
+                const optLoad = examSel.querySelector('option[value="LOAD_MORE"]');
+                if(optLoad) optLoad.remove();
+                examSel.innerHTML += '<option value="LOADING" disabled>⏳ Đang tải thêm...</option>';
+            }
+
+            try {
+                let q = query(collection(db, "lessons"), 
+                    where("type", "==", "quiz"), 
+                    where("part", "==", part), 
+                    orderBy("createdAt", "desc"), 
+                    ...(window.lastVisibleQuiz ? [startAfter(window.lastVisibleQuiz)] : []),
+                    limit(50) // Trắc nghiệm load mẻ lớn 50 câu để gom nhóm
+                );
+
+                const snap = await getDocs(q);
+                const optLoading = examSel.querySelector('option[value="LOADING"]');
+                if(optLoading) optLoading.remove();
+
+                if (!snap.empty) {
+                    window.lastVisibleQuiz = snap.docs[snap.docs.length - 1]; 
+                    
+                    snap.forEach(d => {
+                        const data = { ...d.data(), id: d.id };
+                        if (!allLessons.find(l => l.id === data.id)) allLessons.push(data); 
+                        
+                        const title = data.title || "";
+                        const match = title.match(/^([\d-]+)\s+(.*)$/);
+                        
+                        let examCode = "Mã đề khác";
+                        let qNum = title;
+                        if (match) {
+                            qNum = match[1].trim();     
+                            examCode = match[2].trim(); 
+                        }
+
+                        if (!window.currentQuizGroups[examCode]) window.currentQuizGroups[examCode] = [];
+                        data.displayTitle = qNum; 
+                        window.currentQuizGroups[examCode].push(data);
+                    });
+
+                    window.renderQuizExamSelect(snap.docs.length === 50);
+                } else if (!isLoadMore) {
+                    examSel.innerHTML = '<option value="">Chưa có bài nào</option>';
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        window.renderQuizExamSelect = (hasMore) => {
+            const examSel = document.getElementById('exam-filter-quiz');
+            const currentValue = examSel.value; 
+            examSel.innerHTML = '<option value="">-- Chọn Mã Đề --</option>';
+            Object.keys(window.currentQuizGroups).sort().forEach(code => {
+                examSel.innerHTML += `<option value="${code}">${code} (${window.currentQuizGroups[code].length} câu)</option>`;
+            });
+            if (hasMore) {
+                examSel.innerHTML += `<option value="LOAD_MORE" style="font-weight: bold; color: var(--success); background: #e8f8f5;">⬇️ Tải thêm các mã đề cũ hơn...</option>`;
+            }
+            if (currentValue && currentValue !== "LOAD_MORE") examSel.value = currentValue;
+        };
+
+        window.filterQuizByExam = () => {
+            const examCode = document.getElementById('exam-filter-quiz').value;
+            const quizSel = document.getElementById('quiz-select');
+            if (examCode === "LOAD_MORE") {
+                document.getElementById('exam-filter-quiz').value = ""; 
+                window.fetchQuizBatch(true);
+                return;
+            }
+            if (!examCode) {
+                quizSel.style.display = 'none';
+                return;
+            }
+            quizSel.innerHTML = '<option value="">-- Chọn câu hỏi --</option>';
+            quizSel.style.display = 'block';
+            const questions = window.currentQuizGroups[examCode];
+            questions.sort((a, b) => {
+                const numA = parseInt(a.displayTitle.split('-')[0]) || 0;
+                const numB = parseInt(b.displayTitle.split('-')[0]) || 0;
+                return numA - numB;
+            });
+            questions.forEach(d => {
+                const prefix = examCode === "Mã đề khác" ? "" : "Câu ";
+                quizSel.innerHTML += `<option value='${d.id}'>${prefix}${d.displayTitle}</option>`;
             });
         };
-        window.filterQuizByPart = () => {
-            const part = document.getElementById('part-filter').value;
-            const sel = document.getElementById('quiz-select');
-            sel.innerHTML = '<option value="">Chọn câu hỏi</option>';
+
+        window.renderQuizExamSelect = (hasMore) => {
+            const examSel = document.getElementById('exam-filter-quiz');
+            const currentValue = examSel.value; 
+
+            examSel.innerHTML = '<option value="">-- Chọn Mã Đề --</option>';
             
-            if (!part) return;
+            Object.keys(window.currentQuizGroups).sort().forEach(code => {
+                examSel.innerHTML += `<option value="${code}">${code} (${window.currentQuizGroups[code].length} câu)</option>`;
+            });
 
-            // KIỂM TRA TRẠNG THÁI TẢI
-            if (!isDataLoaded) {
-                sel.innerHTML = '<option value="">⏳ Đang tải dữ liệu, vui lòng chờ...</option>';
+            if (hasMore) {
+                examSel.innerHTML += `<option value="LOAD_MORE" style="font-weight: bold; color: var(--success); background: #e8f8f5;">⬇️ Tải thêm các mã đề cũ hơn...</option>`;
+            }
+
+            if (currentValue && currentValue !== "LOAD_MORE") examSel.value = currentValue;
+        };
+
+        window.filterQuizByExam = () => {
+            const examCode = document.getElementById('exam-filter-quiz').value;
+            const quizSel = document.getElementById('quiz-select');
+
+            if (examCode === "LOAD_MORE") {
+                document.getElementById('exam-filter-quiz').value = ""; 
+                window.fetchQuizBatch(true);
                 return;
             }
 
-            // Phải đảm bảo biến allLessons đã có dữ liệu từ Firebase
-            const filtered = allLessons
-                .filter(l => l.type === 'quiz' && l.part === part)
-                .sort(window.smartSort); 
-
-            if (filtered.length === 0) {
-                sel.innerHTML = '<option value="">Không có dữ liệu cho Part này</option>';
+            if (!examCode) {
+                quizSel.style.display = 'none';
                 return;
             }
 
-            filtered.forEach(d => {
-                const option = document.createElement('option');
-                option.value = d.id;
-                option.innerText = d.title;
-                sel.appendChild(option);
+            quizSel.innerHTML = '<option value="">-- Chọn câu hỏi --</option>';
+            quizSel.style.display = 'block';
+
+            const questions = window.currentQuizGroups[examCode];
+            
+            questions.sort((a, b) => {
+                const numA = parseInt(a.displayTitle.split('-')[0]) || 0;
+                const numB = parseInt(b.displayTitle.split('-')[0]) || 0;
+                return numA - numB;
+            });
+
+            questions.forEach(d => {
+                const prefix = examCode === "Khác" ? "" : "Câu ";
+                quizSel.innerHTML += `<option value='${d.id}'>${prefix}${d.displayTitle}</option>`;
             });
         };
         window.toggleInfo = (id) => { const p = document.getElementById(id); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; };
