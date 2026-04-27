@@ -1558,7 +1558,7 @@
                 // 5. Thông báo và Reset
                 showToast("✅ Đã lưu bài tập thành công!");
                 resetAdminForm();
-                await fetchLessons(); 
+                await window.fetchAllForAdmin();
                 
             } catch(e) { 
                 console.error(e);
@@ -1717,7 +1717,7 @@
             
             // Cuộn lên đầu trang quản lý mượt mà
             window.scrollTo({ top: document.getElementById('admin-lessons').offsetTop - 50, behavior: 'smooth' });
-        };    window.deleteLesson = async (id) => { if(confirm("Xóa?")) { await deleteDoc(doc(db, "lessons", id)); fetchLessons(); } };
+        };    window.deleteLesson = async (id) => { if(confirm("Xóa?")) { await deleteDoc(doc(db, "lessons", id)); await window.fetchAllForAdmin(); } };
 
         async function fetchAdminData() {
             const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
