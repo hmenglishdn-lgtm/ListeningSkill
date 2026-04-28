@@ -937,8 +937,11 @@
                     const userRef = doc(db, "users", user.uid); 
                     const snap = await getDoc(userRef);
                     
+                    // --- XỬ LÝ CHỐNG SPAM / TÀI KHOẢN BỊ TỪ CHỐI ---
                     if (!snap.exists()) {
                         loadingOverlay.style.display = 'none';
+                        // Thêm thông báo rõ ràng trước khi đuổi ra ngoài
+                        alert("⛔ Tài khoản của bạn đã bị từ chối hoặc không tồn tại trên hệ thống.");
                         await signOut(auth);
                         return;
                     }
@@ -1849,7 +1852,10 @@
                             ${dispPhone}
                             <div style="font-size:13px; color:#777; margin-top:2px;"><i class="fa-solid fa-envelope"></i> ${u.email}</div>
                         </div>
-                        <button class="admin-list-btn" onclick="manageU('${d.id}')" style="background:var(--success); color:white; padding: 6px 15px;">Duyệt</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="admin-list-btn" onclick="manageU('${d.id}')" style="background:var(--success); color:white; padding: 6px 15px;">Duyệt</button>
+                            <button class="admin-list-btn" onclick="rejectUser('${d.id}', '${u.email}')" style="background:var(--danger); color:white; padding: 6px 15px;">Từ chối</button>
+                        </div>
                     </div>`;
                 }
                 
@@ -1914,6 +1920,27 @@
             } catch (err) {
                 console.error("Lỗi duyệt hàng loạt:", err);
                 showBeautifulToast("Có lỗi xảy ra khi duyệt!", "danger");
+            }
+        };
+        // ==========================================
+        // HÀM TỪ CHỐI YÊU CẦU ĐĂNG KÝ (XÓA HỒ SƠ)
+        // ==========================================
+        window.rejectUser = async (id, email) => {
+            // Hỏi lại Admin cho chắc chắn để tránh bấm nhầm
+            if (confirm(`⚠️ Bạn có chắc chắn muốn TỪ CHỐI và XÓA yêu cầu đăng ký của email: ${email} không?`)) {
+                try {
+                    // Xóa vĩnh viễn document của user này khỏi bảng 'users'
+                    await deleteDoc(doc(db, "users", id));
+                    
+                    // Hiển thị thông báo thành công
+                    showBeautifulToast(`Đã từ chối và xóa hồ sơ của ${email}!`, "success");
+                    
+                    // Tải lại danh sách để người đó biến mất khỏi màn hình
+                    fetchAdminData(); 
+                } catch (error) {
+                    console.error("Lỗi khi từ chối:", error);
+                    showBeautifulToast("❌ Lỗi khi từ chối: " + error.message, "danger");
+                }
             }
         };
         window.deleteUserRecord = async (id, email) => {
