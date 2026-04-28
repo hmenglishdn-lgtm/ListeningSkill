@@ -438,6 +438,15 @@
     </style>
 </head>
 <body>
+    <script>
+        const CURRENT_VERSION = "1.5.2"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
+        const savedVersion = localStorage.getItem("app_version");
+        if (savedVersion !== CURRENT_VERSION) {
+            localStorage.setItem("app_version", CURRENT_VERSION);
+            // Xóa bộ nhớ tạm và ép tải lại từ server
+            window.location.reload(true); 
+        }
+    </script>
     <div id="loading-overlay"><div class="spinner"></div><p style="color: var(--primary); font-weight: bold;">Đang tải dữ liệu...</p></div>
     <div id="translation-tooltip"></div>
     <div id="toast">✅ Đã lưu thành công!</div>
