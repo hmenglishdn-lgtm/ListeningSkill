@@ -729,6 +729,39 @@
             window.currentStudyGroups = {}; 
             window.currentQuizGroups = {};
             const ITEMS_PER_PAGE = 50;        
+        // ==========================================
+        // THUẬT TOÁN SẮP XẾP MÃ ĐỀ THÔNG MINH (ETS LÊN ĐẦU, CHỮ XUỐNG DƯỚI)
+        // ==========================================
+        window.smartExamSort = (a, b) => {
+            const regex = /T(\d+)\s*ETS\s*(\d*)/i;
+            
+            const matchA = a.match(regex);
+            const matchB = b.match(regex);
+
+            // 1. CẢ HAI ĐỀU LÀ ĐỀ ETS (Xếp năm mới lên đầu, cùng năm xếp theo số T)
+            if (matchA && matchB) {
+                const tNumA = parseInt(matchA[1], 10);
+                let yearA = parseInt(matchA[2], 10);
+                yearA = isNaN(yearA) ? 0 : (yearA < 100 ? yearA + 2000 : yearA);
+
+                const tNumB = parseInt(matchB[1], 10);
+                let yearB = parseInt(matchB[2], 10);
+                yearB = isNaN(yearB) ? 0 : (yearB < 100 ? yearB + 2000 : yearB);
+
+                if (yearA !== yearB) return yearB - yearA; 
+                return tNumA - tNumB; 
+            }
+
+            // 2. A LÀ ETS, B LÀ CHỮ -> ƯU TIÊN A LÊN TRÊN
+            if (matchA && !matchB) return -1;
+
+            // 3. A LÀ CHỮ, B LÀ ETS -> ƯU TIÊN B LÊN TRÊN
+            if (!matchA && matchB) return 1;
+
+            // 4. CẢ HAI ĐỀU LÀ ĐỀ CHỮ (Advertisement, Announcement, Economy...) -> Xếp Alphabet
+            return a.localeCompare(b, 'vi', { numeric: true });
+        };
+
         // --- AUTH LOGIC ---
         document.getElementById('login-btn').onclick = async () => {
             const e = document.getElementById('email').value.trim(), p = document.getElementById('password').value.trim();
@@ -1981,8 +2014,8 @@
                 if (!snap.empty) {
                     let exams = [];
                     snap.forEach(d => exams.push(d.data().examCode));
-                    // Sắp xếp Alphabet và in ra
-                    exams.sort().forEach(code => {
+                    // Áp dụng thuật toán sắp xếp thông minh và in ra
+                    exams.sort(window.smartExamSort).forEach(code => {
                         examSel.innerHTML += `<option value="${code}">${code}</option>`;
                     });
                 } else {
