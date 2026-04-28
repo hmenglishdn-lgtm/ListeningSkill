@@ -470,6 +470,7 @@
             <input type="text" id="reg-fullname" placeholder="Họ và Tên (Bắt buộc)">
             <input type="tel" id="reg-phone" placeholder="Số điện thoại (Bắt buộc)">
             <input type="password" id="reg-password" placeholder="Mật khẩu">
+            <input type="password" id="reg-password-confirm" placeholder="Nhập lại mật khẩu">
             <button id="confirm-reg-btn" class="btn-main">Gửi Yêu Cầu</button>
             <button onclick="closeReg()" style="background:none; border:none; color:#999; cursor:pointer; width:100%; margin-top:10px;">Hủy</button>
         </div>
@@ -778,29 +779,38 @@
         document.getElementById('confirm-pass-btn').onclick = async () => {
             try { await updatePassword(auth.currentUser, document.getElementById('new-password').value); alert("Xong!"); closePass(); showTab(null, 'study'); } catch(e) { alert("Vui lòng đăng nhập lại!"); }
         };
+        // --- XỬ LÝ ĐĂNG KÝ TÀI KHOẢN ---
         document.getElementById('confirm-reg-btn').onclick = async () => {
-            // Lấy thêm giá trị từ 2 ID mới: reg-fullname và reg-phone
             const e = document.getElementById('reg-email').value.trim();
             const fn = document.getElementById('reg-fullname').value.trim();
             const ph = document.getElementById('reg-phone').value.trim();
             const p = document.getElementById('reg-password').value.trim();
+            const pConfirm = document.getElementById('reg-password-confirm').value.trim(); // Lấy giá trị ô Nhập lại MK
+            
             const btn = document.getElementById('confirm-reg-btn');
             
-            // Cập nhật điều kiện kiểm tra bắt buộc điền đủ cả 4 trường
-            if(!e || !fn || !ph || !p) { 
-                showBeautifulToast("Vui lòng nhập đầy đủ: Email, Họ Tên, SĐT và Mật khẩu!", "warning"); 
+            // 1. Kiểm tra bắt buộc điền đủ 5 trường
+            if(!e || !fn || !ph || !p || !pConfirm) { 
+                showBeautifulToast("Vui lòng nhập đầy đủ thông tin!", "warning"); 
                 return; 
+            }
+
+            // 2. Kiểm tra mật khẩu khớp nhau
+            if(p !== pConfirm) {
+                showBeautifulToast("❌ Mật khẩu nhập lại không khớp!", "danger");
+                document.getElementById('reg-password-confirm').focus(); // Đưa con trỏ chuột vào ô bị sai
+                return;
             }
 
             try {
                 btn.innerText = "⏳ Đang gửi...";
                 btn.disabled = true;
 
-                // 1. Tạo tài khoản Auth
+                // Tạo tài khoản Auth
                 const uc = await createUserWithEmailAndPassword(auth, e, p);
                 const uid = uc.user.uid;
 
-                // 2. HIỂN THỊ THÔNG BÁO ĐĂNG KÝ MỚI THÀNH CÔNG (Tắt modal đăng ký, hiện modal kết quả)
+                // Tắt modal đăng ký, hiện modal kết quả
                 document.getElementById('reg-modal').style.display = 'none';
                 const resModal = document.getElementById('result-modal');
                 document.getElementById('result-icon').innerText = "⏳";
@@ -809,7 +819,7 @@
                 document.getElementById('result-msg').innerHTML = "Yêu cầu đã được gửi đi.<br>Chờ thầy Thịnh duyệt nhé :D";
                 resModal.style.display = 'block';
 
-                // 3. Ghi vào Firestore (Thêm fullName và phone vào database)
+                // Ghi vào Firestore
                 await setDoc(doc(db, "users", uid), { 
                     email: e, 
                     fullName: fn,
@@ -820,7 +830,7 @@
                     startDate: null 
                 });
 
-                // 4. Tự động logout sau 4 giây để học sinh quay lại màn hình đăng nhập
+                // Tự động logout sau 4 giây
                 setTimeout(async () => {
                     await signOut(auth);
                     resModal.style.display = 'none';
@@ -828,10 +838,8 @@
                 }, 4000);
 
             } catch(err) { 
-                // --- PHẦN XỬ LÝ LỖI EMAIL ĐÃ TỒN TẠI ---
                 if (err.code === 'auth/email-already-in-use') {
                     document.getElementById('reg-modal').style.display = 'none';
-                    
                     const resModal = document.getElementById('result-modal');
                     document.getElementById('result-icon').innerText = "⚠️";
                     document.getElementById('result-title').innerText = "Email đã tồn tại!";
@@ -844,7 +852,6 @@
                         resetRegInputs(btn);
                         document.getElementById('auth-screen').style.display = 'block';
                     }, 4000);
-
                 } else {
                     btn.innerText = "Gửi Yêu Cầu";
                     btn.disabled = false;
@@ -853,13 +860,19 @@
             }
         };
 
-        // Hàm phụ để dọn dẹp form đăng ký
+        // Hàm phụ dọn dẹp sạch sẽ toàn bộ form đăng ký
         function resetRegInputs(btn) {
             document.getElementById('reg-email').value = "";
+            document.getElementById('reg-fullname').value = "";
+            document.getElementById('reg-phone').value = "";
             document.getElementById('reg-password').value = "";
+            if(document.getElementById('reg-password-confirm')) {
+                document.getElementById('reg-password-confirm').value = "";
+            }
             btn.innerText = "Gửi Yêu Cầu";
             btn.disabled = false;
-        }        // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
+        }
+        // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
         document.getElementById('confirm-forgot-btn').onclick = async () => {
             const emailInput = document.getElementById('forgot-email');
             const email = emailInput.value.trim();
