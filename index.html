@@ -1259,8 +1259,13 @@
             let correct = 0;
             inputs.forEach(i => {
                 const hint = i.parentNode.querySelector('.correct-hint');
-                const userAns = i.value.trim().toLowerCase();
-                const coreAns = i.getAttribute('data-ans').toLowerCase();
+                // Hàm chuẩn hóa: Ép tất cả các loại dấu nháy cong/kỳ lạ về chuẩn 1 dấu nháy thẳng '
+                const normalizeStr = (str) => {
+                    return (str || "").trim().toLowerCase().replace(/[‘’´`]/g, "'");
+                };
+
+                const userAns = normalizeStr(i.value);
+                const coreAns = normalizeStr(i.getAttribute('data-ans'));
 
                 // Reset các class cũ
                 hint.classList.remove('hint-correct', 'hint-wrong');
