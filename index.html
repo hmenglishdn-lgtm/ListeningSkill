@@ -23,15 +23,42 @@
         .left-side { left: calc((100vw - 850px) / 4); transform: translate(-50%, -50%); }
         .right-side { right: calc((100vw - 850px) / 4); transform: translate(50%, -50%); }
 
-        /* --- MENU (HOVER) --- */
+        /* --- MENU (HOVER) NÂNG CẤP --- */
         .menu-container { position: absolute; top: 20px; right: 20px; z-index: 1000; padding-bottom: 20px; }
         .menu-icon { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
-        .dropdown-menu { display: none; position: absolute; right: 0; top: 50px; background: white; min-width: 240px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1px solid #eee; animation: fadeIn 0.3s ease; }
-        .dropdown-menu div { padding: 15px 20px; font-size: 14px; border-bottom: 1px solid #f5f5f5; color: var(--text-dark); cursor: pointer; text-align: left; transition: 0.2s; }
-        .dropdown-menu div:hover { background: #f8f9fa; padding-left: 25px; color: var(--primary); }
-        .dropdown-menu .menu-header { background: var(--light-yellow); font-weight: bold; color: var(--primary); cursor: default; }
         .menu-container:hover .dropdown-menu { display: block; }
         .menu-container:hover .menu-icon { transform: scale(1.1); background: #5649c1; }
+
+        .dropdown-menu { 
+            display: none; position: absolute; right: 0; top: 60px; background: white; 
+            min-width: 260px; max-width: 90vw; border-radius: 20px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.8); 
+            padding: 10px; animation: fadeIn 0.3s ease; 
+        }
+        .dropdown-menu .menu-header { 
+            background: var(--light-yellow); font-weight: 800; color: var(--primary); 
+            cursor: default; padding: 15px 20px; border-radius: 15px;
+            margin-bottom: 8px; font-size: 15px; text-align: center; border: 1px solid var(--accent-yellow);
+        }
+        .menu-item-btn {
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 12px; margin-bottom: 5px; border-radius: 12px;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            border-left: 4px solid transparent; background: #fff;
+        }
+        .menu-item-btn:hover { background: #f8f9fa; transform: translateX(5px); border-left-color: var(--primary); }
+        .menu-item-btn.logout-btn:hover { background: #fff5f5; border-left-color: #ff7675; }
+        .menu-item-content { display: flex; align-items: center; gap: 12px; }
+        .menu-icon-box {
+            width: 34px; height: 34px; border-radius: 10px; display: flex; 
+            align-items: center; justify-content: center; color: white;
+            font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .menu-item-text { font-weight: 600; color: var(--text-dark); font-size: 14.5px; }
+        .menu-item-badge {
+            background: var(--light-yellow); color: var(--primary); font-size: 10px; 
+            font-weight: bold; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--accent-yellow);
+        }
 
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
         .modal-content { background: var(--light-yellow); margin: 10% auto; padding: 35px; border-radius: 30px; width: 90%; max-width: 400px; border: 3px solid var(--accent-yellow); box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
@@ -359,6 +386,46 @@
             font-style: italic;
             margin-right: 5px !important;
         }
+        /* --- NÚT THAO TÁC TRONG BẢNG --- */
+        .action-btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .action-btn-modern {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 10px; /* Bo góc mềm mại */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* Nút Xem lịch sử (Xanh dương) */
+        .action-btn-modern.view {
+            background: rgba(9, 132, 227, 0.15); /* Nền xanh nhạt */
+            color: #0984e3; /* Icon xanh đậm */
+        }
+        .action-btn-modern.view:hover {
+            background: #0984e3;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(9, 132, 227, 0.3);
+        }
+        /* Nút Xóa (Đỏ) */
+        .action-btn-modern.delete {
+            background: rgba(255, 118, 117, 0.15); /* Nền đỏ nhạt */
+            color: #d63031; /* Icon đỏ đậm */
+        }
+        .action-btn-modern.delete:hover {
+            background: #ff7675;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(255, 118, 117, 0.3);
+        }
         /* --- LÀM ĐẸP THANH CUỘN CHO SỔ TAY --- */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px; /* Làm thanh cuộn nhỏ lại cho tinh tế */
@@ -436,6 +503,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <script>
@@ -464,11 +532,53 @@
     <div class="menu-container" id="main-menu-div">
         <button class="menu-icon" id="menu-trigger">☰</button>
         <div class="dropdown-menu" id="myDropdown">
-            <div class="menu-header" id="menu-email-display">Học viên</div>
-            <div onclick="openChangePass()">🔑 Đổi mật khẩu</div>
-            <div id="menu-date-display">📅 Khai giảng: ---</div>
-            <div onclick="showNotebookModal()" style="color:var(--primary); font-weight:bold;">📔 Sổ ghi chú</div>
-            <div onclick="logout()" style="color:var(--danger); font-weight:bold;">🚪 Đăng xuất</div>
+            <div class="menu-header">
+                <i class="fa-solid fa-circle-user"></i> <span id="menu-email-display">Học viên</span>
+            </div>
+
+            <div class="menu-item-btn" onclick="showNotebookModal()">
+                <div class="menu-item-content">
+                    <div class="menu-icon-box" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <span class="menu-item-text">Sổ ghi chú</span>
+                </div>
+                <span class="menu-item-badge">VIP</span>
+            </div>
+
+            <div class="menu-item-btn" onclick="showMyStats()" style="background: linear-gradient(to right, #fdfae6, white); border-left-color: #00b894;">
+                <div class="menu-item-content">
+                    <div class="menu-icon-box" style="background: linear-gradient(135deg, #00b894, #00cec9);">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <b class="menu-item-text" style="color: var(--primary);">Phân tích tiến độ</b>
+                </div>
+                <span class="menu-item-badge" style="background: #e1fff0; border-color: #00b894;">HOT</span>
+            </div>
+
+            <div class="menu-item-btn" onclick="openChangePass()">
+                <div class="menu-item-content">
+                    <div class="menu-icon-box" style="background: linear-gradient(135deg, #fdcb6e, #ffeaa7);">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <span class="menu-item-text">Đổi mật khẩu</span>
+                </div>
+            </div>
+
+            <div style="padding: 10px 15px; font-size: 13px; color: #666; text-align: center; background: #fafafa; border-radius: 10px; margin: 0 10px; font-weight: 500;">
+                <span id="menu-date-display"><i class="fa-solid fa-clock-rotate-left" style="color: #e1b12c;"></i> Gia hạn: ---</span>
+            </div>
+
+            <hr style="border: 0; border-top: 1px dashed #eee; margin: 5px 10px;">
+
+            <div class="menu-item-btn logout-btn" onclick="logout()">
+                <div class="menu-item-content">
+                    <div class="menu-icon-box" style="background: linear-gradient(135deg, #ff7675, #fab1a0);">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </div>
+                    <span class="menu-item-text" style="color: #d63031;">Đăng xuất</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -486,6 +596,56 @@
     </div>    
     <div id="forgot-modal" class="modal"><div class="modal-content"><h3>Quên Mật Khẩu</h3><input type="email" id="forgot-email" placeholder="Email khôi phục"><button id="confirm-forgot-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeForgot()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
     <div id="pass-modal" class="modal"><div class="modal-content"><h3>Đổi Mật Khẩu</h3><input type="password" id="new-password" placeholder="Mật khẩu mới"><button id="confirm-pass-btn" class="btn-main">Cập Nhật</button><button onclick="closePass()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Đóng</button></div></div>
+    <div id="force-name-modal" class="modal" style="z-index: 99999;">
+        <div class="modal-content" style="text-align: center; border-color: var(--primary);">
+            <div style="font-size: 50px; margin-bottom: 10px;">👋</div>
+            <h3 style="color: var(--primary); margin-top: 0;">Chào bạn mới / cũ!</h3>
+            <p style="color: #666; font-size: 14.5px; margin-bottom: 20px; line-height: 1.5;">Hệ thống vừa cập nhật tính năng mới. Vui lòng bổ sung <b style="color: var(--danger);">Họ và Tên</b> của bạn để Admin tiện hỗ trợ trong quá trình học nhé!</p>
+            <input type="text" id="force-name-input" placeholder="Nhập họ và tên đầy đủ của bạn..." style="text-align: center; font-weight: bold; border: 2px solid var(--primary);">
+            <button onclick="submitForcedName()" class="btn-main" id="force-name-btn" style="background: linear-gradient(135deg, #00b894, #00cec9);">Lưu Thông Tin & Bắt Đầu Học</button>
+        </div>
+    </div>
+    <div id="my-stats-modal" class="modal" style="overflow-y: auto; padding: 30px 0;">
+        <div class="modal-content" style="max-width: 850px; width: 95%; margin: 0 auto; text-align: left; border-radius: 35px; height: fit-content; box-sizing: border-box;">
+            
+            <h3 style="color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 15px;">
+                <i class="fa-solid fa-chart-line"></i> Tình Hình Học Tập
+            </h3>
+            
+            <div style="background: #fdfae6; padding: 15px 20px; border-radius: 15px; border: 1px solid #f1c40f; margin-bottom: 20px;">
+                <h4 style="margin:0 0 10px 0; color: #d35400; font-size: 16px;">Tổng quan cá nhân</h4>
+                <div id="my-stats-overview" style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 15px;">⏳ Đang tải...</div>
+            </div>
+
+            <div id="chart-container" style="margin-bottom: 25px; display: none;">
+                <h4 style="color: var(--primary); margin-bottom: 15px; font-size: 16px;">📈 Biểu đồ thời gian học mỗi ngày</h4>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="my-trend-chart"></canvas>
+                </div>
+            </div>
+
+            <h4 id="stats-title-label" style="color: var(--primary); margin-bottom: 15px; font-size: 16px;">📝 Chi tiết lịch sử</h4>
+            <table class="user-table" style="margin-bottom: 10px;">
+                <thead>
+                    <tr>
+                        <th>Bài tập</th>
+                        <th>Điểm</th>
+                        <th>Thời gian</th>
+                        <th>Ngày làm</th>
+                    </tr>
+                </thead>
+                <tbody id="my-stats-table-body"></tbody>
+            </table>
+
+            <div id="load-more-stats-container" style="text-align: center; margin-bottom: 20px; display: none;">
+                <button onclick="window.loadMoreStats()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.3s;">
+                    <i class="fa-solid fa-angles-down"></i> Xem các bài cũ hơn
+                </button>
+            </div>
+
+            <button onclick="document.getElementById('my-stats-modal').style.display='none'" class="btn-main" style="width: 100%; margin-top: 10px;">Đóng Bảng Thống Kê</button>
+        </div>
+    </div>
     <div id="result-modal" class="modal">
         <div class="modal-content" style="
             text-align: center; 
@@ -740,6 +900,47 @@
             window.currentQuizGroups = {};
             const ITEMS_PER_PAGE = 50;        
         // ==========================================
+        // THUẬT TOÁN ĐẾM GIỜ THÔNG MINH (SMART TIMER)
+        // ==========================================
+        window.smartTimer = {
+            isRunning: false,
+            totalActiveTime: 0, // Lưu tổng số mili-giây học thật sự
+            lastStartTime: 0,
+
+            start: function() {
+                if (!this.isRunning) {
+                    this.lastStartTime = Date.now();
+                    this.isRunning = true;
+                }
+            },
+            pause: function() {
+                if (this.isRunning) {
+                    this.totalActiveTime += (Date.now() - this.lastStartTime);
+                    this.isRunning = false;
+                }
+            },
+            resetAndGetSeconds: function() {
+                this.pause(); // Dừng lại để chốt số
+                const finalSeconds = Math.round(this.totalActiveTime / 1000);
+                this.totalActiveTime = 0; // Reset cho bài mới
+                return finalSeconds;
+            },
+            formatTime: function(sec) {
+                const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+                const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+                const s = Math.floor(sec % 60).toString().padStart(2, '0');
+                return `${h}:${m}:${s}`;
+            }
+        };
+
+        // Lắng nghe sự kiện học viên chuyển Tab hoặc thu nhỏ trình duyệt
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) { window.smartTimer.pause(); } 
+            else { window.smartTimer.start(); }
+        });
+        window.addEventListener("blur", () => window.smartTimer.pause()); // Click ra ngoài web
+        window.addEventListener("focus", () => window.smartTimer.start()); // Click lại vào web
+        // ==========================================
         // THUẬT TOÁN SẮP XẾP MÃ ĐỀ THÔNG MINH (ETS LÊN ĐẦU, CHỮ XUỐNG DƯỚI)
         // ==========================================
         window.smartExamSort = (a, b) => {
@@ -782,9 +983,30 @@
         window.closeReg = () => document.getElementById('reg-modal').style.display = 'none';
         window.openForgot = () => document.getElementById('forgot-modal').style.display = 'block';
         window.closeForgot = () => document.getElementById('forgot-modal').style.display = 'none';
-        window.openChangePass = () => { document.getElementById('pass-modal').style.display = 'block'; document.getElementById("myDropdown").style.display = "none"; };
+        window.openChangePass = () => { document.getElementById('pass-modal').style.display = 'block'; };
         window.closePass = () => document.getElementById('pass-modal').style.display = 'none';
 
+        // --- FIX LỖI KẸT MENU 3 GẠCH ---
+        setTimeout(() => {
+            // 1. Tự động thu gọn menu mượt mà sau khi bấm một chức năng bất kỳ
+            document.querySelectorAll('.menu-item-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const menuDropdown = document.getElementById('myDropdown');
+                    menuDropdown.style.display = 'none'; // Tạm thời ép ẩn menu để không cản tầm nhìn
+                    
+                    setTimeout(() => { 
+                        menuDropdown.style.display = ''; // Sau 0.3s, trả lại quyền hoạt động bình thường cho CSS
+                    }, 300);
+                });
+            });
+            
+            // 2. Chắc chắn rằng khi chạm/rê chuột lại vào icon 3 gạch, menu luôn sẵn sàng
+            const menuBtn = document.getElementById('menu-trigger');
+            if(menuBtn) {
+                menuBtn.addEventListener('mouseenter', () => document.getElementById('myDropdown').style.display = '');
+                menuBtn.addEventListener('touchstart', () => document.getElementById('myDropdown').style.display = '', {passive: true});
+            }
+        }, 1000);
         document.getElementById('confirm-pass-btn').onclick = async () => {
             try { await updatePassword(auth.currentUser, document.getElementById('new-password').value); alert("Xong!"); closePass(); showTab(null, 'study'); } catch(e) { alert("Vui lòng đăng nhập lại!"); }
         };
@@ -881,6 +1103,36 @@
             btn.innerText = "Gửi Yêu Cầu";
             btn.disabled = false;
         }
+        // --- XỬ LÝ BẮT BUỘC NHẬP TÊN CHO TÀI KHOẢN CŨ ---
+        window.submitForcedName = async () => {
+            const nameInput = document.getElementById('force-name-input').value.trim();
+            if (!nameInput) {
+                showBeautifulToast("Bạn chưa nhập tên kìa!", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('force-name-btn');
+            btn.innerText = "⏳ Đang cập nhật...";
+            btn.disabled = true;
+
+            try {
+                const uid = auth.currentUser.uid;
+                // Cập nhật tên lên Firebase
+                await updateDoc(doc(db, "users", uid), { fullName: nameInput });
+                
+                showBeautifulToast("Cập nhật tên thành công!", "success");
+                
+                // Đóng bức tường chặn
+                document.getElementById('force-name-modal').style.display = 'none';
+                
+                // Cập nhật lại tên trên Menu 3 gạch ngay lập tức
+                document.getElementById('menu-email-display').innerText = nameInput;
+            } catch (err) {
+                showBeautifulToast("Lỗi cập nhật: " + err.message, "danger");
+                btn.innerText = "Lưu Thông Tin & Bắt Đầu Học";
+                btn.disabled = false;
+            }
+        };
         // --- XỬ LÝ QUÊN MẬT KHẨU TRIỆT ĐỂ ---
         document.getElementById('confirm-forgot-btn').onclick = async () => {
             const emailInput = document.getElementById('forgot-email');
@@ -933,8 +1185,154 @@
                 }
             }
         };
+// ==========================================
+        // THUẬT TOÁN TẢI THÊM LỊCH SỬ (CẤP SỐ NHÂN)
+        // ==========================================
+        let myChartInstance = null;
+        let cachedStatsLogs = [];     // Lưu tạm dữ liệu sau khi tải từ Firebase
+        let currentDisplayLimit = 5;  // Mặc định hiện 5 câu
+        let currentIncrement = 10;    // Lần bấm đầu tiên cộng thêm 10 câu
 
-// --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
+        window.showMyStats = async () => {
+            const modal = document.getElementById('my-stats-modal');
+            const overview = document.getElementById('my-stats-overview');
+            const chartContainer = document.getElementById('chart-container');
+            
+            // TRẢ LẠI TIÊU ĐỀ MẶC ĐỊNH KHI TỰ XEM CỦA MÌNH
+            const titleEl = modal.querySelector('h3');
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-chart-line"></i> Tình Hình Học Tập`;
+            // Reset trạng thái ban đầu mỗi khi mở modal
+            currentDisplayLimit = 5;
+            currentIncrement = 10;
+            
+            modal.style.display = 'block';
+            overview.innerHTML = "⏳ Đang tải dữ liệu...";
+            chartContainer.style.display = 'none';
+
+            try {
+                const uid = auth.currentUser.uid;
+                const q = query(collection(db, "study_logs"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    overview.innerHTML = "Bạn chưa hoàn thành bài tập nào.";
+                    document.getElementById('my-stats-table-body').innerHTML = "<tr><td colspan='4' style='text-align:center;'>Chưa có dữ liệu</td></tr>";
+                    document.getElementById('load-more-stats-container').style.display = 'none';
+                    return;
+                }
+
+                cachedStatsLogs = [];
+                snap.forEach(doc => cachedStatsLogs.push(doc.data()));
+                cachedStatsLogs.sort((a, b) => b.timestamp - a.timestamp); // Mới nhất lên đầu
+
+                // 1. Tính tổng quan (vẫn tính trên toàn bộ dữ liệu)
+                let totalTime = cachedStatsLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
+                overview.innerHTML = `
+                    <div style="flex:1; min-width: 120px;">✅ Đã làm: <b style="color:var(--primary); font-size: 16px;">${cachedStatsLogs.length} bài</b></div>
+                    <div style="flex:1; min-width: 150px;">⏱️ Tổng giờ: <b style="color:var(--success); font-size: 16px;">${window.smartTimer.formatTime(totalTime)}</b></div>
+                `;
+
+                // 2. Vẽ bảng lần đầu (5 câu)
+                renderStatsTable();
+
+                // 3. Vẽ biểu đồ (vẫn vẽ dựa trên 15 bài gần nhất để thấy xu hướng)
+                renderStatsChart();
+
+            } catch (err) {
+                console.error("Lỗi:", err);
+                overview.innerHTML = "❌ Lỗi kết nối máy chủ!";
+            }
+        };
+
+        // Hàm vẽ bảng dữ liệu
+        function renderStatsTable() {
+            const tbody = document.getElementById('my-stats-table-body');
+            const loadMoreBtn = document.getElementById('load-more-stats-container');
+            const titleLabel = document.getElementById('stats-title-label');
+
+            const displayLogs = cachedStatsLogs.slice(0, currentDisplayLimit);
+            
+            let trHtml = "";
+            displayLogs.forEach(log => {
+                const dateStr = new Date(log.timestamp).toLocaleString('vi-VN');
+                const color = log.score >= 8 ? '#00b894' : (log.score >= 5 ? '#e1b12c' : '#e84118');
+                trHtml += `
+                    <tr>
+                        <td style="font-weight: 500;">${log.lessonTitle}</td>
+                        <td><b style="color:${color}; font-size: 15px;">${log.score}</b></td>
+                        <td>${window.smartTimer.formatTime(log.duration)}</td>
+                        <td style="font-size: 13px; color: #777;">${dateStr}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = trHtml;
+            titleLabel.innerText = `📝 Chi tiết lịch sử (${displayLogs.length} bài gần nhất)`;
+
+            // Ẩn/Hiện nút "Xem thêm"
+            if (currentDisplayLimit < cachedStatsLogs.length) {
+                loadMoreBtn.style.display = 'block';
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+        // Hàm xử lý khi bấm "Xem thêm"
+        window.loadMoreStats = () => {
+            // Cộng thêm số lượng hiện tại
+            currentDisplayLimit += currentIncrement;
+            
+            // Cập nhật số lượng cho lần sau theo cấp số nhân 1.5
+            currentIncrement = Math.round(currentIncrement * 1.5);
+            
+            // Vẽ lại bảng (không tải lại từ server, chỉ vẽ thêm từ mảng tạm)
+            renderStatsTable();
+            
+            // Cuộn nhẹ xuống dưới để học sinh thấy dòng mới
+            setTimeout(() => {
+                window.scrollBy({ top: 150, behavior: 'smooth' });
+            }, 100);
+        };
+
+        // Hàm vẽ biểu đồ (tách riêng cho gọn)
+        function renderStatsChart() {
+            const chartContainer = document.getElementById('chart-container');
+            if (cachedStatsLogs.length === 0) return;
+
+            chartContainer.style.display = 'block';
+            let dailyData = {};
+            // Lấy 30 bài gần nhất để tính toán biểu đồ xu hướng ngày
+            cachedStatsLogs.slice(0, 30).forEach(log => {
+                let dateObj = new Date(log.timestamp);
+                let dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`; 
+                if (!dailyData[dateStr]) dailyData[dateStr] = { timestamp: log.timestamp, totalSeconds: 0 };
+                dailyData[dateStr].totalSeconds += (log.duration || 0);
+            });
+
+            let chartDataArray = Object.keys(dailyData).map(key => ({
+                dateStr: key,
+                timestamp: dailyData[key].timestamp,
+                totalMinutes: parseFloat((dailyData[key].totalSeconds / 60).toFixed(1))
+            })).sort((a, b) => a.timestamp - b.timestamp).slice(-10);
+
+            const ctx = document.getElementById('my-trend-chart').getContext('2d');
+            if (myChartInstance) myChartInstance.destroy();
+            myChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartDataArray.map(d => d.dateStr),
+                    datasets: [{
+                        label: 'Phút học',
+                        data: chartDataArray.map(d => d.totalMinutes),
+                        borderColor: '#00b894',
+                        backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+        // --- AUTH LOGIC NÂNG CẤP (CHỐNG LỖI TRỐNG DỮ LIỆU) ---
         onAuthStateChanged(auth, async (user) => {
             const loadingOverlay = document.getElementById('loading-overlay');
             
@@ -986,8 +1384,18 @@
                     document.getElementById('auth-screen').style.display = 'none';
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('menu-trigger').style.display = 'flex';
-                    document.getElementById('menu-email-display').innerText = uData.email;
-                    document.getElementById('menu-date-display').innerText = uData.startDate ? "📅 Khai giảng: " + new Date(uData.startDate).toLocaleDateString('vi-VN') : "📅 Khai giảng: ---";
+                    // --- 1. HIỂN THỊ TÊN VÀ KIỂM TRA BẮT BUỘC NHẬP TÊN ---
+                    if (!uData.fullName || uData.fullName.trim() === "") {
+                        // NẾU CHƯA CÓ TÊN: Bật bức tường chặn lên, tạm thời hiện Email ở Menu
+                        document.getElementById('force-name-modal').style.display = 'block';
+                        document.getElementById('menu-email-display').innerText = uData.email;
+                    } else {
+                        // NẾU CÓ TÊN RỒI: Cứ cho vào bình thường
+                        document.getElementById('menu-email-display').innerText = uData.fullName;
+                    }
+                    // --- 2. HIỂN THỊ NGÀY GIA HẠN (Lấy từ ngày hết hạn của tài khoản) ---
+                    const ngayGiaHanText = uData.expiryDate ? new Date(uData.expiryDate).toLocaleDateString('vi-VN') : "---";
+                    document.getElementById('menu-date-display').innerHTML = `<i class="fa-solid fa-clock-rotate-left" style="color: #e1b12c;"></i> Gia hạn: ${ngayGiaHanText}`;
 
                     updateDoc(userRef, { lastSeen: new Date().getTime() });
 
@@ -1078,6 +1486,7 @@
             document.getElementById('vocab-panel').innerText = d.vocabulary || "---";
             document.getElementById('score-display').style.display = 'none';
             document.getElementById('next-lesson-btn').style.display = 'none';
+            window.smartTimer.totalActiveTime = 0; window.smartTimer.start();
         };
 
         // --- TAB 2 ---
@@ -1120,7 +1529,7 @@
                 imgCont.style.display = 'none'; 
             }
 
-// --- BƯỚC 3: HIỂN THỊ CÂU HỎI & ĐÁP ÁN (FIX LẶP TẠI ĐÂY) ---
+            // --- BƯỚC 3: HIỂN THỊ CÂU HỎI & ĐÁP ÁN (FIX LẶP TẠI ĐÂY) ---
             if (d.isGroup && d.questions) {
                 // CHỈ CHẠY 1 VÒNG LẶP DUY NHẤT CHO DẠNG NHÓM (PART 3, 4)
                 d.questions.forEach((q, qIdx) => {
@@ -1243,8 +1652,17 @@
                 hasBlanks = checkBlank(d.question) || ['optA', 'optB', 'optC', 'optD'].some(key => checkBlank(d[key]));
             }
             document.getElementById('quiz-check-btn').style.display = hasBlanks ? 'block' : 'none';
+            window.smartTimer.totalActiveTime = 0; window.smartTimer.start();
+            // --- KÍCH HOẠT BẤM GIỜ THÔNG MINH ---
+            if(window.smartTimer) {
+                window.smartTimer.totalActiveTime = 0;
+                window.smartTimer.start();
+            }
         };
-        window.checkResults = (areaId, scoreId, isQuiz = false) => {
+        // ==========================================
+        // HÀM CHẤM ĐIỂM VÀ LƯU NHẬT KÝ HỌC TẬP (SMART TIMER)
+        // ==========================================
+        window.checkResults = async (areaId, scoreId, isQuiz = false) => { // Thêm async ở đây
             const area = document.getElementById(areaId);
             const optCont = isQuiz ? document.getElementById('quiz-options-container') : null;
             let inputs = Array.from(area.querySelectorAll('.blank-input'));
@@ -1257,13 +1675,13 @@
             }
 
             let correct = 0;
+            // Hàm chuẩn hóa: Ép tất cả các loại dấu nháy cong/kỳ lạ về chuẩn 1 dấu nháy thẳng '
+            const normalizeStr = (str) => {
+                return (str || "").trim().toLowerCase().replace(/[‘’´`]/g, "'");
+            };
+
             inputs.forEach(i => {
                 const hint = i.parentNode.querySelector('.correct-hint');
-                // Hàm chuẩn hóa: Ép tất cả các loại dấu nháy cong/kỳ lạ về chuẩn 1 dấu nháy thẳng '
-                const normalizeStr = (str) => {
-                    return (str || "").trim().toLowerCase().replace(/[‘’´`]/g, "'");
-                };
-
                 const userAns = normalizeStr(i.value);
                 const coreAns = normalizeStr(i.getAttribute('data-ans'));
 
@@ -1283,6 +1701,7 @@
                     hint.classList.add('hint-wrong');
                 }
             });
+
             // Tính toán tỷ lệ phần trăm
             const scorePercent = (correct / inputs.length) * 100;
             
@@ -1294,9 +1713,34 @@
             
             // HIỆN NÚT CÂU TIẾP THEO
             const nextBtnId = isQuiz ? 'next-quiz-btn' : 'next-lesson-btn';
-            document.getElementById(nextBtnId).style.display = 'block';
+            if(document.getElementById(nextBtnId)) document.getElementById(nextBtnId).style.display = 'block';
 
-            sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // ======================================================
+            // --- GHI NHẬT KÝ HỌC TẬP LÊN FIREBASE (SMART TIMER) ---
+            // ======================================================
+            if (window.smartTimer && auth && auth.currentUser) { 
+                try {
+                    const activeSeconds = window.smartTimer.resetAndGetSeconds(); // Chốt số giây học và reset
+                    const currentId = isQuiz ? document.getElementById('quiz-select').value : document.getElementById('lesson-select').value;
+                    const lessonData = allLessons.find(l => l.id === currentId);
+                    
+                    if(lessonData) {
+                        const point10 = parseFloat((scorePercent / 10).toFixed(1)); // Thang điểm 10
+                        await addDoc(collection(db, "study_logs"), {
+                            uid: auth.currentUser.uid,
+                            email: auth.currentUser.email,
+                            lessonId: currentId,
+                            lessonTitle: lessonData.title,
+                            score: point10,
+                            duration: activeSeconds,
+                            timestamp: Date.now()
+                        });
+                    }
+                } catch(err) {
+                    console.log("Lỗi lưu lịch sử học tập:", err);
+                }
+            }
+
             // HIỂN THỊ BẢNG KẾT QUẢ & PHÁO HOA
             setTimeout(() => {
                 const modal = document.getElementById('result-modal');
@@ -1314,10 +1758,9 @@
                     resTitle.innerText = "Xuất Sắc!";
                     resTitle.style.color = "var(--success)";
                     resMsg.innerText = "Quá tốt, bạn đang tiến bộ theo từng giờ!";
-                    // --- ĐOẠN CODE MỚI THÊM VÀO ĐỂ LƯU BÀI PASS ---
+                    // LƯU BÀI PASS
                     const currentLessonId = isQuiz ? document.getElementById('quiz-select').value : document.getElementById('lesson-select').value;
                     if(currentLessonId) window.markLessonAsPassed(currentLessonId);
-                    // ----------------------------------------------
                 } else {
                     resIcon.innerText = "✍️";
                     resTitle.innerText = "Cố gắng thêm chút nữa!";
@@ -1329,10 +1772,10 @@
                 setTimeout(() => {
                     modal.style.display = 'none';
                 }, 2000);
-                }, 600); // Đợi 1 chút sau khi kiểm tra xong mới hiện bảng
-            };
+            }, 600); // Đợi 1 chút sau khi kiểm tra xong mới hiện bảng
+        };
 
-            // Hàm tạo pháo hoa bắn từ 2 bên màn hình
+        // Hàm tạo pháo hoa bắn từ 2 bên màn hình
             function fireSuccessConfetti() {
                 const end = Date.now() + (3 * 1000); // Chạy trong 3 giây
                 const colors = ['#6c5ce7', '#ffde59', '#00b894'];
@@ -1885,10 +2328,15 @@
                     <td>${u.expiryDate ? new Date(u.expiryDate).toLocaleDateString('vi-VN') : '---'}</td>
                     <td style="font-size:12px; color:#555;">${lastSeenStr}</td>
                     <td>${u.status === 'approved' ? '✅ Đang học' : '⏳ Chờ'}</td>
-                    <td style="text-align: center;">
-                        <button onclick="deleteUserRecord('${d.id}', '${u.email}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <div class="action-btn-group">
+                            <button class="action-btn-modern view" onclick="viewUserHistoryAdmin('${d.id}', '${dispName.replace(/'/g, "\\'")}')" title="Xem lịch sử làm bài">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </button>
+                            <button class="action-btn-modern delete" onclick="deleteUserRecord('${d.id}', '${u.email}')" title="Xóa học viên">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>`;
             });
@@ -1955,6 +2403,55 @@
                     console.error("Lỗi khi từ chối:", error);
                     showBeautifulToast("❌ Lỗi khi từ chối: " + error.message, "danger");
                 }
+            }
+        };
+        // --- HÀM CHO ADMIN XEM LỊCH SỬ HỌC VIÊN ---
+        window.viewUserHistoryAdmin = async (uid, name) => {
+            const modal = document.getElementById('my-stats-modal');
+            const overview = document.getElementById('my-stats-overview');
+            const chartContainer = document.getElementById('chart-container');
+            
+            // Đổi tiêu đề modal để phân biệt (Admin đang xem của học viên)
+            const titleEl = modal.querySelector('h3');
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-user-graduate"></i> Lịch Sử: <span style="color:#d35400;">${name}</span>`;
+
+            // Reset bộ đếm phân trang
+            currentDisplayLimit = 5;
+            currentIncrement = 10;
+            
+            modal.style.display = 'block';
+            overview.innerHTML = "⏳ Đang tải dữ liệu của học viên...";
+            chartContainer.style.display = 'none';
+
+            try {
+                // CỐT LÕI: Lọc study_logs theo UID của học viên được click
+                const q = query(collection(db, "study_logs"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    overview.innerHTML = "Học viên này chưa hoàn thành bài tập nào.";
+                    document.getElementById('my-stats-table-body').innerHTML = "<tr><td colspan='4' style='text-align:center;'>Chưa có dữ liệu</td></tr>";
+                    document.getElementById('load-more-stats-container').style.display = 'none';
+                    return;
+                }
+
+                cachedStatsLogs = [];
+                snap.forEach(doc => cachedStatsLogs.push(doc.data()));
+                cachedStatsLogs.sort((a, b) => b.timestamp - a.timestamp); // Xếp mới nhất lên đầu
+
+                let totalTime = cachedStatsLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
+                overview.innerHTML = `
+                    <div style="flex:1; min-width: 120px;">✅ Đã làm: <b style="color:var(--primary); font-size: 16px;">${cachedStatsLogs.length} bài</b></div>
+                    <div style="flex:1; min-width: 150px;">⏱️ Tổng giờ: <b style="color:var(--success); font-size: 16px;">${window.smartTimer.formatTime(totalTime)}</b></div>
+                `;
+
+                // Tận dụng lại hàm vẽ bảng và vẽ biểu đồ có sẵn của học viên
+                renderStatsTable();
+                renderStatsChart();
+
+            } catch (err) {
+                console.error("Lỗi:", err);
+                overview.innerHTML = "❌ Lỗi kết nối máy chủ!";
             }
         };
         window.deleteUserRecord = async (id, email) => {
@@ -2042,6 +2539,11 @@
             document.getElementById('vocab-panel').innerText = d.vocabulary || "---";
             document.getElementById('score-display').style.display = 'none';
             document.getElementById('next-lesson-btn').style.display = 'none';
+            // --- KÍCH HOẠT BẤM GIỜ THÔNG MINH ---
+            if(window.smartTimer) {
+                window.smartTimer.totalActiveTime = 0;
+                window.smartTimer.start();
+            }
         };
         // ==========================================
         // 2. LOGIC CHO TRẮC NGHIỆM (TỐI ƯU BẰNG METADATA)
