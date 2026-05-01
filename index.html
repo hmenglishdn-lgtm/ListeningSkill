@@ -77,7 +77,8 @@
         .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary);}
         /* --- HIỂN THỊ DỮ LIỆU (FIX ENTER XUỐNG HÀNG) --- */
         #exercise-area, #quiz-area, .info-panel { 
-            line-height: 1.8; font-size: 20px; padding: 30px; background: white; border-radius: 15px; 
+            line-height: 2.3; /* Tăng từ 1.8 lên 2.3 để các ô input không đụng nhau */
+            font-size: 20px; padding: 30px; background: white; border-radius: 15px; 
             border: 1px solid #e0d0a0; text-align: left; margin: 20px 0; min-height: 100px;
             white-space: pre-wrap; word-wrap: break-word;
         }
@@ -141,7 +142,7 @@
             transition: all 0.2s ease; 
             
             display: flex;            
-            align-items: center;      
+            align-items: flex-start;      
             justify-content: flex-start; /* Đổi sang CĂN TRÁI để dễ đọc câu dài */
             text-align: left;       
             width: 100%;              
@@ -152,6 +153,8 @@
             gap: 15px; /* Khoảng cách giữa chữ A,B,C,D và nội dung */
             user-select: text;
             -webkit-user-select: text;
+            height: auto;
+            word-break: break-word;
         }
         
         .option-btn:hover {
@@ -178,7 +181,6 @@
         .admin-list-btn { border: none; padding: 5px 12px; border-radius: 10px; cursor: pointer; transition: 0.3s; font-weight: bold; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 1550px) { .side-images { display: none; } }
-        @media (max-width: 600px) { .quiz-options { grid-template-columns: 1fr; } }
         .audio-controls { display: flex; justify-content: center; gap: 15px; margin-top: 10px; margin-bottom: 15px; }
         .btn-audio-ctrl { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.3s; box-shadow: 0 3px 10px rgba(108, 92, 231, 0.2); }
         .btn-audio-ctrl:hover { transform: scale(1.1); background: #5649c1;}
@@ -313,11 +315,6 @@
             font-size: 15px;
         }
 
-        /* Responsive cho điện thoại: Chuyển dọc nếu màn hình nhỏ */
-        @media (max-width: 600px) {
-            .quiz-group-item { flex-direction: column; }
-            .quiz-group-question { border-right: none; border-bottom: 2px solid var(--accent-yellow); }
-        }
         /* Nâng cấp Tooltip để hỗ trợ cả Dịch và Từ điển (Thay thế hoàn toàn 2 phần cũ) */
         #translation-tooltip {
             position: absolute;
@@ -491,15 +488,58 @@
             background: #fdfae6;
             border-top: 1px solid #eee;
         }
-        /* --- TỐI ƯU GIAO DIỆN MODAL TRÊN MOBILE --- */
+        /* ==================================================== */
+        /* --- TỐI ƯU GIAO DIỆN HOÀN CHỈNH CHO MOBILE --- */
+        /* ==================================================== */
         @media (max-width: 600px) {
-            .modal-content {
-                padding: 20px 15px !important; /* Thu nhỏ khoảng cách viền trong */
-                width: 95% !important; /* Mở rộng chiều ngang trên mobile */
+            /* 1. Xếp dọc phần câu hỏi nhóm (Part 3, Part 4) */
+            .quiz-group-item { 
+                flex-direction: column; 
+            }
+            .quiz-group-question { 
+                border-right: none; 
+                border-bottom: 2px solid var(--accent-yellow); 
+            }
+
+            /* 2. Khung bài làm & Font chữ chung */
+            #exercise-area, #quiz-area {
+                font-size: 16px;       /* Thu nhỏ chữ đoạn văn trên điện thoại */
+                padding: 15px;         /* Thu nhỏ lề để tiết kiệm diện tích */
+                line-height: 2.2;      /* Giữ nguyên line-height rộng để ô chữ thở */
+            }
+
+            /* 3. Thu nhỏ ô nhập liệu điền từ */
+            .blank-input {
+                font-size: 14px;
+                padding: 2px 6px;
+            }
+            .blank-wrapper {
+                margin: 0 2px;
+            }
+
+            /* 4. Khung đáp án Trắc nghiệm */
+            .quiz-options { 
+                grid-template-columns: 1fr; /* Đáp án xếp 1 cột dọc */
+                gap: 10px; 
             }
             .option-btn {
-                padding: 10px 12px; /* Nút đáp án gọn lại */
-                font-size: 14px;
+                padding: 10px 12px; 
+                font-size: 14px;       /* Cỡ chữ đáp án trên mobile */
+                gap: 10px;
+            }
+
+            /* 5. Thu nhỏ bộ điều khiển âm thanh */
+            .audio-controls {
+                gap: 10px;
+            }
+            .btn-audio-ctrl {
+                width: 40px; height: 40px; font-size: 15px;
+            }
+
+            /* 6. Modal hiển thị thông báo/Từ vựng */
+            .modal-content {
+                padding: 20px 15px !important;
+                width: 95% !important;
             }
         }
     </style>
@@ -507,7 +547,7 @@
 </head>
 <body>
     <script>
-        const CURRENT_VERSION = "1.5.3"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
+        const CURRENT_VERSION = "1.5.4"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
         const savedVersion = localStorage.getItem("app_version");
         if (savedVersion !== CURRENT_VERSION) {
             localStorage.setItem("app_version", CURRENT_VERSION);
