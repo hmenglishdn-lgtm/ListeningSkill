@@ -547,7 +547,7 @@
 </head>
 <body>
     <script>
-        const CURRENT_VERSION = "1.5.4"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
+        const CURRENT_VERSION = "1.5.3"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
         const savedVersion = localStorage.getItem("app_version");
         if (savedVersion !== CURRENT_VERSION) {
             localStorage.setItem("app_version", CURRENT_VERSION);
@@ -560,12 +560,12 @@
     <div id="toast">✅ Đã lưu thành công!</div>
     <div class="side-images left-side">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh9.jpg?alt=media">
-        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh8.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh%202.jpg?alt=media&token=dceb5254-8e6c-47bf-8285-654b3a7f6e91">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2F%E1%BA%A3nh2.jpg?alt=media">
     </div>
     <div class="side-images right-side">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh7.jpg?alt=media">
-        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh3.jpg?alt=media">
+        <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2FANh%201.jpg?alt=media&token=02bfd205-ccdc-4d6a-b898-4b7d89287fb0">
         <img src="https://firebasestorage.googleapis.com/v0/b/dictation-app-774f5.firebasestorage.app/o/assets%2Fanh1.jpg?alt=media">
     </div>
 
@@ -749,6 +749,10 @@
                         <option value="">-- Chọn câu hỏi --</option>
                     </select>
                 </div>
+                <!-- THÊM ĐOẠN NÀY ĐỂ HIỂN THỊ ẢNH ĐIỀN TỪ -->
+                <div id="dictation-image-container" class="quiz-img-container" style="display:none; margin-bottom: 15px;">
+                    <img id="dictation-image-display" src="" style="max-height: 300px; object-fit: contain;">
+                </div>
                 
                 <div id="exercise-area">Hãy chọn bài học...</div>
                 
@@ -810,7 +814,18 @@
             <div id="admin-lessons" class="tab-content" style="display:none; text-align: left;">
                 <select id="admin-type" onchange="toggleAdminForm()"><option value="dictation">Dạng Điền Từ</option><option value="quiz">Dạng Trắc Nghiệm</option></select>
                 <input type="text" id="admin-title" placeholder="Tiêu đề bài học">
-                <div id="dictation-fields"><select id="admin-level"><option value="Co_ban">Cơ bản</option><option value="Trung_cap">Trung cấp</option><option value="Nang_cao">Nâng cao</option></select><textarea id="admin-script" rows="4" placeholder="Kịch bản [từ điền]"></textarea></div>
+                <div id="dictation-fields">
+                    <select id="admin-level">
+                        <option value="Co_ban">Cơ bản</option>
+                        <option value="Trung_cap">Trung cấp</option>
+                        <option value="Nang_cao">Nâng cao</option>
+                    </select>
+
+                    <label style="font-weight:bold; margin-top:10px; display:block;">Ảnh minh họa (Tùy chọn):</label>
+                    <input type="file" id="admin-dictation-img" accept="image/*" style="margin-bottom: 10px;">
+
+                    <textarea id="admin-script" rows="4" placeholder="Kịch bản [từ điền]"></textarea>
+                </div>
                 <div id="quiz-fields" style="display:none;">
                     <select id="admin-part" onchange="toggleQuizInputMode()">
                         <option value="Part1">Part 1 (4 câu + Ảnh)</option>
@@ -2080,6 +2095,15 @@
                 if(type === 'dictation') { 
                     data.level = document.getElementById('admin-level').value; 
                     data.script = document.getElementById('admin-script').value; 
+                
+                    const dictImgFile = document.getElementById('admin-dictation-img').files[0];
+                    if(dictImgFile) {
+                        const iRef = ref(storage, `images/${Date.now()}_dictation.png`);
+                        await uploadBytes(iRef, dictImgFile);
+                        data.dictationImg = await getDownloadURL(iRef);
+                    } else if (currentEditId) {
+                        data.dictationImg = allLessons.find(l => l.id === currentEditId).dictationImg || "";
+                    }
                 } else { 
                     const part = document.getElementById('admin-part').value;
                     data.part = part;
@@ -2166,7 +2190,8 @@
             const ids = [
                 'admin-title', 'admin-script', 'admin-question', 'admin-translate', 'admin-vocab',
                 'admin-opt-a', 'admin-opt-b', 'admin-opt-c', 'admin-opt-d',
-                'admin-group-context', 'admin-audio', 'admin-quiz-img', 'admin-group-img'
+                'admin-group-context', 'admin-audio', 'admin-quiz-img', 'admin-group-img',
+                'admin-dictation-img' // <--- THÊM CÁI NÀY VÀO ĐÂY
             ];
             ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ""; });
             
@@ -2568,7 +2593,17 @@
             
             document.getElementById('translate-panel').style.display = 'none'; 
             document.getElementById('vocab-panel').style.display = 'none';
-            
+            // --- THÊM MỚI: HIỂN THỊ ẢNH NẾU CÓ ---
+            const imgCont = document.getElementById('dictation-image-container');
+            const imgDisp = document.getElementById('dictation-image-display');
+            if (d.dictationImg) {
+                imgDisp.src = d.dictationImg;
+                imgCont.style.display = 'block';
+            } else {
+                imgCont.style.display = 'none';
+            }
+            // ------------------------------------
+
             // Tải Audio và nội dung của câu hỏi được chọn
             const p = document.getElementById('player'); 
             p.src = d.audioUrl; 
