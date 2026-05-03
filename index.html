@@ -547,13 +547,35 @@
 </head>
 <body>
     <script>
-        const CURRENT_VERSION = "1.5.3"; // ⚠️ MỖI LẦN SỬA CODE, BẠN ĐỔI SỐ NÀY LÊN (VD: 1.5.3, 1.5.4...)
+        const CURRENT_VERSION = "1.5.9"; // ⚠️ Đã tăng lên 1.5.6 để ép trình duyệt xóa cache
         const savedVersion = localStorage.getItem("app_version");
         if (savedVersion !== CURRENT_VERSION) {
             localStorage.setItem("app_version", CURRENT_VERSION);
-            // Xóa bộ nhớ tạm và ép tải lại từ server
             window.location.reload(true); 
         }
+        // --- KHAI BÁO KEY VỚI CƠ CHẾ TỰ KIỂM TRA ---
+        window.GEMINI_KEYS = [
+            "AIzaSyAdgIEfFqE4JKPQeabOFSnIpbHbL6tEgbE",
+            "AIzaSyBY-_IKGw2GY8XTF7bCKFtP4UjIXJ2Z-Nc",
+            "AIzaSyBxICv7AhcLh8fmt92m9-CDrCe9qywhX94"
+        ];
+        // Biến nhớ vị trí Key đang dùng
+        window.currentKeyIndex = 0;
+        // THUẬT TOÁN XOAY VÒNG CHIA ĐỀU CHÍNH XÁC (Round Robin)
+        window.getGeminiKey = function() {
+            if (Array.isArray(window.GEMINI_KEYS) && window.GEMINI_KEYS.length > 0) {
+                // Lấy Key theo thứ tự
+                const keyToUse = window.GEMINI_KEYS[window.currentKeyIndex];
+                
+                // Tăng thứ tự lên 1. Nếu đến Key cuối cùng thì quay ngược về 0
+                window.currentKeyIndex = (window.currentKeyIndex + 1) % window.GEMINI_KEYS.length;
+                
+                return keyToUse;
+            }
+            console.error("🔴 LỖI CODE: Mảng GEMINI_KEYS bị rỗng!");
+            return "";
+        };
+        window.dictCache = {}; // Khởi tạo Lớp phòng thủ 1 (Bộ nhớ đệm)
     </script>
     <div id="loading-overlay"><div class="spinner"></div><p style="color: var(--primary); font-weight: bold;">Đang tải dữ liệu...</p></div>
     <div id="translation-tooltip"></div>
@@ -1875,15 +1897,20 @@
         };
         document.addEventListener('mousedown', closeTooltipEvent);
         document.addEventListener('touchstart', closeTooltipEvent, {passive: true});
-
+        // 1. THÊM BIẾN NÀY NGAY TRƯỚC HÀM ĐỂ LƯU THỜI GIAN
+        let tooltipTimeout;
         // --- XỬ LÝ HIỆN TOOLTIP KHI BÔI ĐEN (Hỗ trợ PC & Mobile) ---
         const showTooltipEvent = (e) => {
             const tooltip = document.getElementById('translation-tooltip');
             // Nếu bấm vào bên trong tooltip thì không làm gì cả
             if (tooltip.contains(e.target)) return;
 
-            // BỌC BẰNG SETTIMEOUT 250ms: Chờ hệ điều hành điện thoại quét khối chữ xong
-            setTimeout(async () => {
+            // 🛑 LỚP PHÒNG THỦ 4: BỘ CHỐNG SPAM API (DEBOUNCE)
+            // Xóa ngay lệnh gọi cũ nếu người dùng vẫn đang nháy/kéo chuột
+            clearTimeout(tooltipTimeout);
+
+            // BỌC BẰNG SETTIMEOUT 500ms: Chờ học sinh thả tay hẳn ra mới chạy
+            tooltipTimeout = setTimeout(async () => {
                 let selectedText = "";
                 let pageX = 0;
                 let pageY = 0;
@@ -1943,22 +1970,102 @@
                 // --- 3. PHÂN LUỒNG XỬ LÝ ---
                 if (words.length === 1) {
                     // ==========================================
-                    // CHẾ ĐỘ A: TỪ ĐIỂN (BÔI 1 TỪ)
+                    // CHẾ ĐỘ A: TỪ ĐIỂN 3 LỚP (CACHE -> GEMINI AI -> DICTIONARY API)
                     // ==========================================
                     try {
-                        const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '');
-                        const dictUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`;
-                        const response = await fetch(dictUrl);
-                        const data = await response.json();
+                        const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '').toLowerCase();
+                        let data = null;
+                        let isFromFallback = false; // Biến kiểm tra xem có phải đang dùng Từ điển cũ không
 
+                        // 🛡️ LỚP 1: KIỂM TRA BỘ NHỚ ĐỆM (CACHE)
+                        if (window.dictCache[cleanWord]) {
+                            data = window.dictCache[cleanWord];
+                            isFromFallback = data._isFallback || false;
+                            console.log("⚡ Lớp 1: Lấy từ Cache siêu tốc!");
+                        } else {
+                            // 🛡️ LỚP 2: GỌI GEMINI AI (VẮT KIỆT ĐA KEY + NGẮT MẠCH THÔNG MINH)
+                        try {
+                            const prompt = `Bạn là một từ điển Anh - Việt chuyên nghiệp. Hãy dịch và giải nghĩa từ '${cleanWord}'. Trả về KẾT QUẢ DUY NHẤT LÀ ĐỊNH DẠNG JSON MẢNG (Array) CHUẨN XÁC theo cấu trúc sau, tuyệt đối không giải thích thêm, không dùng markdown:
+[{"word":"${cleanWord}","phonetic":"(Phiên âm)","phonetics":[{"audio":""}],"meanings":[{"partOfSpeech":"(loại từ)","definitions":[{"definition":"(Nghĩa tiếng Việt rõ ràng, ngắn gọn)"}]}]}]`;
+                            
+                            let isAiSuccess = false; 
+                            let totalKeys = window.GEMINI_KEYS.length;
+
+                            // 1. Tải "Sổ đen" từ bộ nhớ trình duyệt (để F5 không bị mất)
+                            if (!window.keyCooldowns) {
+                                window.keyCooldowns = JSON.parse(sessionStorage.getItem("gemini_cooldowns")) || {};
+                            }
+
+                            for (let i = 0; i < totalKeys; i++) {
+                                const currentKey = typeof window.getGeminiKey === 'function' ? window.getGeminiKey() : "";
+                                if (!currentKey) throw new Error("Không có API Key!");
+
+                                // 🛑 BỘ LỌC NGẮT MẠCH: Kiểm tra Key này có đang nằm trong sổ đen không?
+                                const cooldownTime = window.keyCooldowns[currentKey] || 0;
+                                if (Date.now() < cooldownTime) {
+                                    const waitLeft = Math.ceil((cooldownTime - Date.now()) / 1000);
+                                    console.warn(`⏳ Key đang bị phạt thêm ${waitLeft}s. Lập tức bỏ qua, thử Key tiếp theo...`);
+                                    continue; // NHẢY CÓC LUÔN, KHÔNG GỌI API NỮA!
+                                }
+
+                                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey.trim()}`;
+                                
+                                const geminiRes = await fetch(geminiUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                });
+
+                                if (geminiRes.ok) {
+                                    const geminiJson = await geminiRes.json();
+                                    const textOutput = geminiJson.candidates[0].content.parts[0].text;
+                                    const cleanJsonStr = textOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+                                    
+                                    data = JSON.parse(cleanJsonStr);
+                                    window.dictCache[cleanWord] = data; 
+                                    isAiSuccess = true; 
+                                    break; // Tra thành công -> Phá vòng lặp ngay!
+                                } else {
+                                    // ⚠️ XỬ LÝ KHI GOOGLE TỪ CHỐI
+                                    if (geminiRes.status === 429) {
+                                        // Ghi tên Key này vào sổ đen 60 giây (60000 milliseconds)
+                                        window.keyCooldowns[currentKey] = Date.now() + 60000;
+                                        sessionStorage.setItem("gemini_cooldowns", JSON.stringify(window.keyCooldowns));
+                                        console.warn(`🔴 Key quá tải! Đã phạt khóa Key này 60 giây.`);
+                                    } else {
+                                        console.warn(`⚠️ Lỗi API bất ngờ (không phải 429). Bỏ qua Key này.`);
+                                    }
+                                }
+                            }
+
+                            // Chạy qua 3 Key (hoặc né qua cả 3 Key vì cùng nằm trong sổ đen) mà vẫn fail
+                            if (!isAiSuccess) {
+                                throw new Error("Tất cả các Key AI đều cạn kiệt năng lượng. Kích hoạt Lớp 3!");
+                            }
+
+                        } catch (geminiError) {
+                            // 🛡️ LỚP 3: AI CHẾT LÂM SÀNG, CHUYỂN SANG TỪ ĐIỂN CŨ
+                            console.warn("⚠️ Lớp 3 được kích hoạt. Nguyên nhân Lớp 2 sập:", geminiError.message);
+                            const dictUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`;
+                            const response = await fetch(dictUrl);
+                            data = await response.json();
+                            
+                            if (data.title !== "No Definitions Found" && Array.isArray(data)) {
+                                data._isFallback = true;
+                                isFromFallback = true;
+                            }
+                        }
+                        }
+
+                        // --- KẾT XUẤT GIAO DIỆN (GIỮ NGUYÊN CẤU TRÚC HIỆN TẠI) ---
                         if (data.title === "No Definitions Found" || !Array.isArray(data)) {
-                            // Nếu không thấy trong từ điển, dùng Google Translate
+                            // Cuối cùng vẫn không ra chữ, đưa qua Google Translate cứng
                             const translated = await translateText(selectedText);
                             tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
                         } else {
                             const entry = data[0];
-                            const phonetic = entry.phonetic || (entry.phonetics.find(p => p.text)?.text) || "";
-                            const audioSrc = entry.phonetics.find(p => p.audio !== "")?.audio || "";
+                            const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || "";
+                            const audioSrc = entry.phonetics && entry.phonetics.find(p => p.audio !== "")?.audio || "";
                             
                             let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
                             
@@ -1975,52 +2082,32 @@
                                         </div>`;
                                 });
                             });
-                            // ... (giữ nguyên phần trên của từ điển) ...
                             meaningsHTML += `</div>`;
 
                             tooltip.innerHTML = `
                                 <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
                                     <div style="display: flex; align-items: center;">
                                         <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
-                                        ${audioSrc ? `<i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); new Audio('${audioSrc}').play();"></i>` : ''}
-                                    </div>
+                                        <i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); playVocabAudio('${entry.word.replace(/'/g, "\\'")}');"></i>
+                                        </div>
                                     <span style="color:#00b894; font-size:13px;">${phonetic}</span>
                                 </div>
-
                                 ${meaningsHTML}
-
                                 <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
-                                    <input type="text" id="final-meaning-to-save" 
-                                           placeholder="✎ Nhập thêm nghĩa khác nếu có..." 
-                                           style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;"
-                                           onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
-                                    
-                                    <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" 
-                                            style="width: 100%; 
-                                                   background: linear-gradient(135deg, #00b894, #00cec9); 
-                                                   color: white; 
-                                                   border: none; 
-                                                   padding: 14px 20px; 
-                                                   border-radius: 14px; 
-                                                   font-weight: 800; 
-                                                   font-size: 15px; 
-                                                   letter-spacing: 0.5px; 
-                                                   cursor: pointer; 
-                                                   display: flex; 
-                                                   align-items: center; 
-                                                   justify-content: center; 
-                                                   gap: 8px; 
-                                                   box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4); 
-                                                   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
-                                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> 
-                                        <span>LƯU VÀO ĐÁM MÂY</span>
+                                    <input type="text" id="final-meaning-to-save" placeholder="✎ Nhập thêm nghĩa khác nếu có..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
+                                    <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" style="width: 100%; background: linear-gradient(135deg, #00b894, #00cec9); color: white; border: none; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4);">
+                                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> <span>LƯU VÀO ĐÁM MÂY</span>
                                     </button>
                                 </div>
                             `;
-                            // Tự động dịch các tầng nghĩa sang tiếng Việt
-                            tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
-                                span.innerText = await translateText(span.innerText);
-                            });
+
+                            // CHỈ DÙNG GOOGLE DỊCH LẠI NẾU ĐANG LẤY TỪ API CŨ (Vì API cũ trả tiếng Anh)
+                            // Còn Gemini đã trả sẵn Tiếng Việt rồi thì không cần dịch nữa (Nhanh gấp đôi!)
+                            if (isFromFallback) {
+                                tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
+                                    span.innerText = await translateText(span.innerText);
+                                });
+                            }
                         }
                     } catch (err) {
                         const translated = await translateText(selectedText);
