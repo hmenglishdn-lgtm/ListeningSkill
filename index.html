@@ -66,10 +66,54 @@
         .container { width: 95%; max-width: 850px; background-color: var(--light-yellow); padding: 40px; border-radius: 35px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); border: 2px solid var(--accent-yellow); position: relative; z-index: 10; text-align: center; }
         input, select, textarea { width: 100% !important; padding: 14px; margin-bottom: 15px; border: 1px solid #e0d0a0; border-radius: 12px; background: white; font-size: 16px; box-sizing: border-box; }
         
-        .btn-main { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; margin-bottom: 10px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
-        .btn-main:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(108, 92, 231, 0.5); filter: brightness(1.1); }
-        .btn-main.active { background: #5649c1; transform: translateY(2px); }
+        /* --- ĐỒNG BỘ NÚT BẤM (PHONG CÁCH GHOST BUTTON TỪ LOGO) --- */
+        .btn-main { 
+            background: #ffffff !important; /* Phông nền trắng tinh khôi */
+            color: #f39c12 !important; /* Chữ màu vàng đậm (giống màu chữ HAIMAI trên logo) để dễ đọc */
+            border: 2px solid #ffde59 !important; /* Viền màu vàng tươi (giống vòng tròn ngoài logo) */
+            padding: 12px 20px; 
+            border-radius: 30px; 
+            cursor: pointer; 
+            font-weight: 800; 
+            font-size: 15px; 
+            width: 100%; 
+            margin-bottom: 10px; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            box-shadow: 0 4px 10px rgba(255, 222, 89, 0.15) !important; /* Bóng vàng siêu nhạt */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
 
+        /* Hiệu ứng khi rê chuột: Nút được đổ đầy nền vàng rực rỡ, chữ hóa trắng, tỏa hào quang */
+        .btn-main:hover { 
+            transform: translateY(-4px); 
+            background: linear-gradient(135deg, #ffde59, #ffc312) !important; /* Đổ nền vàng khi đưa chuột vào */
+            border: 2px solid #ffde59 !important; 
+            color: #ffffff !important; /* Chữ đổi sang trắng */
+            box-shadow: 0 8px 20px rgba(255, 195, 18, 0.4), 0 0 15px rgba(255, 222, 89, 0.6) !important; 
+        }
+
+        /* Trạng thái Tab đang được chọn (Active) - Đổ nền vàng cam cố định */
+        .btn-main.active { 
+            background: linear-gradient(135deg, #ffc312, #f39c12) !important; 
+            color: #ffffff !important;
+            border-color: transparent !important;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.15) !important;
+            transform: translateY(1px);
+        }
+
+        /* Hiệu ứng vô hiệu hóa (Khi đang xử lý / Chống spam) */
+        .btn-main:disabled {
+            opacity: 0.65;
+            cursor: not-allowed !important;
+            transform: scale(0.98) !important;
+            box-shadow: none !important;
+            background: #f8f9fa !important;
+            border-color: #e0e0e0 !important;
+            color: #a4b0be !important;
+        }
         .speed-btn { background: white; border: 2px solid #e0d0a0; padding: 8px 18px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; color: var(--text-dark); }
         .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .speed-controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
@@ -77,10 +121,21 @@
         .speed-btn.active { background: var(--primary); color: white; border-color: var(--primary);}
         /* --- HIỂN THỊ DỮ LIỆU (FIX ENTER XUỐNG HÀNG) --- */
         #exercise-area, #quiz-area, .info-panel { 
-            line-height: 2.3; /* Tăng từ 1.8 lên 2.3 để các ô input không đụng nhau */
-            font-size: 20px; padding: 30px; background: white; border-radius: 15px; 
+            line-height: 1.6; /* Reset lại để container con điều khiển */
+            font-size: 20px; padding: 25px; background: white; border-radius: 15px; 
             border: 1px solid #e0d0a0; text-align: left; margin: 20px 0; min-height: 100px;
-            white-space: pre-wrap; word-wrap: break-word;
+            /* Bỏ white-space: pre-wrap */
+            word-wrap: break-word;
+        }
+
+        /* Ép các khu vực này luôn dùng Flex-wrap để không bị tràn */
+        #exercise-area .sentence-container, 
+        #quiz-area .sentence-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 6px; /* Khoảng cách dọc 12px, ngang 6px */
+            line-height: 2.8; /* Tạo khoảng hở rộng để các ô input "thở" */
         }
         .blank-wrapper { 
             display: inline-flex;     /* Thay đổi sang inline-flex để dễ căn chỉnh */
@@ -542,12 +597,85 @@
                 width: 95% !important;
             }
         }
+        /* =========================================
+           GIAO DIỆN NÚT HỘP THƯ HIỆN ĐẠI - HẦM HỐ
+           ========================================= */
+        .btn-inbox-modern {
+            position: relative;
+            width: auto;
+            padding: 10px 20px !important;
+            background: linear-gradient(145deg, #2d3436, #1e272e) !important; /* Nền đen kim loại */
+            color: #ffffff !important;
+            border: 1px solid #57606f !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3) !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Hiệu ứng khi rê chuột: Nổi lên và phát sáng viền cam */
+        .btn-inbox-modern:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(230, 126, 34, 0.5) !important; 
+            border-color: #e67e22 !important;
+        }
+
+        /* Đổi màu icon thành cam neon để nổi bật trên nền đen */
+        .btn-inbox-modern i {
+            color: #e67e22; 
+            font-size: 17px;
+        }
+
+        /* Chấm đỏ bo viền trắng, đổ bóng dạ quang và đập nhịp */
+        .badge-modern {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white !important;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.8);
+            animation: pulseBadge 2s infinite;
+        }
+
+        /* Hiệu ứng đập nhịp (Pulse) cho chấm đỏ */
+        @keyframes pulseBadge {
+            0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+        .sentence-container {
+            display: block; /* Mặc định */
+            word-break: keep-all; /* Không cho ngắt giữa từ */
+        }
+
+        .blank-wrapper {
+            display: inline-flex !important; /* Luôn đi cùng nhau */
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+
+        .blank-input {
+            min-width: 40px; /* Không cho ô nhập bị bẹp rúm */
+            max-width: 100%;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <script>
-        const CURRENT_VERSION = "1.5.9"; // ⚠️ Đã tăng lên 1.5.6 để ép trình duyệt xóa cache
+        const CURRENT_VERSION = "1.6.2"; // ⚠️ Đã tăng lên 1.5.6 để ép trình duyệt xóa cache
         const savedVersion = localStorage.getItem("app_version");
         if (savedVersion !== CURRENT_VERSION) {
             localStorage.setItem("app_version", CURRENT_VERSION);
@@ -555,9 +683,9 @@
         }
         // --- KHAI BÁO KEY VỚI CƠ CHẾ TỰ KIỂM TRA ---
         window.GEMINI_KEYS = [
-            "AIzaSyAdgIEfFqE4JKPQeabOFSnIpbHbL6tEgbE",
-            "AIzaSyBY-_IKGw2GY8XTF7bCKFtP4UjIXJ2Z-Nc",
-            "AIzaSyBxICv7AhcLh8fmt92m9-CDrCe9qywhX94"
+            "AIzaSyCGF0oSQC0AsTm_LS2Gki2k30j2w_cDgo4",
+            "AIzaSyBvZmHWORDMBn_aYDAeVOoxTgemfmYnesM",
+            "AIzaSyDPY1RN-gcHFaQsc0jZnbonsAiLFS3E6rc"
         ];
         // Biến nhớ vị trí Key đang dùng
         window.currentKeyIndex = 0;
@@ -658,6 +786,16 @@
     </div>    
     <div id="forgot-modal" class="modal"><div class="modal-content"><h3>Quên Mật Khẩu</h3><input type="email" id="forgot-email" placeholder="Email khôi phục"><button id="confirm-forgot-btn" class="btn-main">Gửi Yêu Cầu</button><button onclick="closeForgot()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Hủy</button></div></div>
     <div id="pass-modal" class="modal"><div class="modal-content"><h3>Đổi Mật Khẩu</h3><input type="password" id="new-password" placeholder="Mật khẩu mới"><button id="confirm-pass-btn" class="btn-main">Cập Nhật</button><button onclick="closePass()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Đóng</button></div></div>
+    <div id="inbox-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px; padding: 25px;">
+            <h3 style="color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px;">
+                <i class="fa-solid fa-envelope-open-text"></i> Góp ý từ Giáo viên
+            </h3>
+            <div id="inbox-list" class="custom-scrollbar" style="max-height: 50vh; overflow-y: auto; text-align: left; margin-top: 15px;">
+            </div>
+            <button onclick="document.getElementById('inbox-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: #333; margin-top: 15px;">Đóng Lại</button>
+        </div>
+    </div>
     <div id="force-name-modal" class="modal" style="z-index: 99999;">
         <div class="modal-content" style="text-align: center; border-color: var(--primary);">
             <div style="font-size: 50px; margin-bottom: 10px;">👋</div>
@@ -737,10 +875,27 @@
         <div id="main-app" style="display:none;">
             <div class="tab-nav" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px; flex-wrap: wrap;">
                 <button class="btn-main active" style="width:auto; padding:10px 15px;" id="tab-study-btn" onclick="showTab(event, 'study')">Điền Từ</button>
+                
                 <button class="btn-main" style="width:auto; padding:10px 15px;" id="tab-quiz-btn" onclick="showTab(event, 'quiz-tab')">Nghe Chọn Đáp Án</button>
+                
+                <button class="btn-main" style="width:auto; padding:10px 15px;" id="tab-flashcard-btn" onclick="showTab(event, 'flashcard-tab')">
+                    <i class="fa-solid fa-layer-group"></i> Flashcards Daily
+                </button>
+                
+                <button class="btn-main" id="btn-inbox-outside" style="position: relative; width:auto; padding:10px 15px;" onclick="showInboxModal()">
+                    <i class="fa-solid fa-envelope"></i> Hộp Thư
+                    <!-- Chấm đỏ giữ nguyên hiệu ứng nhịp đập của bản trước -->
+                    <span id="inbox-badge-outside" class="badge-modern" style="display:none;">0</span>
+                </button>
+                
+                <!-- CÁC NÚT CỦA ADMIN -->
                 <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'admin-lessons')">Quản Lý</button>
                 <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-manage')">Phê Duyệt</button>
                 <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-list')">Học Viên</button>
+                
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'admin-support'); loadTeacherRequests();">
+                    <i class="fa-solid fa-pen-nib"></i> Chấm Bài
+                </button>
             </div>
 
             <div id="study" class="tab-content">
@@ -831,6 +986,24 @@
                 </div>
                 <div id="quiz-translate-panel" class="info-panel"></div>
                 <div id="quiz-vocab-panel" class="info-panel"></div>
+            </div>
+            <!-- TAB FLASHCARD TOEIC BÊN NGOÀI -->
+            <div id="flashcard-tab" class="tab-content" style="display:none; text-align: center;">
+                <div style="background: white; border-radius: 20px; padding: 40px 20px; border: 2px dashed var(--primary); margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                    <div style="font-size: 65px; margin-bottom: 15px; animation: bounceIcon 2s infinite alternate;">🧠</div>
+                    <h2 style="color: var(--primary); margin-bottom: 10px;">Từ Vựng TOEIC Cốt Lõi</h2>
+                    <p style="color: #666; line-height: 1.6; max-width: 600px; margin: 0 auto 25px auto; font-size: 15px;"></p>
+                    <button class="btn-main" onclick="startToeicFlashcards()" style="background: linear-gradient(135deg, #0984e3, #6c5ce7); width: auto; padding: 16px 40px; font-size: 18px; box-shadow: 0 10px 25px rgba(9, 132, 227, 0.4); border-radius: 50px;">
+                        <i class="fa-solid fa-bolt"></i> Bắt Đầu Luyện Tập Ngay
+                    </button>
+                </div>
+            </div>
+
+            <!-- DÁN TAB CHẤM BÀI VÀO ĐÂY -->
+            <div id="admin-support" class="tab-content" style="display:none; text-align: left;">
+                <h3 style="color: var(--primary);"><i class="fa-solid fa-chalkboard-user"></i> Góc Chấm Bài Thủ Công</h3>
+                <p style="color: #666; font-size: 14px;">Những câu AI bị lỗi sẽ chuyển về đây để bạn chấm.</p>
+                <div id="support-requests-list" style="margin-top: 15px;">Đang tải danh sách chờ chấm...</div>
             </div>
 
             <div id="admin-lessons" class="tab-content" style="display:none; text-align: left;">
@@ -923,7 +1096,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, setPersistence, browserSessionPersistence, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where, enableIndexedDbPersistence, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, setDoc, getDoc, where, enableIndexedDbPersistence, limit, startAfter, serverTimestamp, onSnapshot  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         const firebaseConfig = { apiKey: "AIzaSyBXwRP4875uCI8V3KBIQUSmPkHakHKBEuw", authDomain: "dictation-app-774f5.firebaseapp.com", projectId: "dictation-app-774f5", storageBucket: "dictation-app-774f5.firebasestorage.app", messagingSenderId: "286096122054", appId: "1:286096122054:web:03c26dc34b691d7e2eb7c7" };
         const app = initializeApp(firebaseConfig); 
@@ -967,7 +1140,6 @@
         window.smartSort = smartSort; // Gán vào window để chắc chắn các hàm khác gọi được
 
         // Quan trọng: Đẩy vào window để các hàm khác luôn thấy nó
-        window.smartSort = smartSort;
             let allLessons = []; let currentEditId = null;
 
             // --- BIẾN LAZYLOAD SERVER-SIDE ---
@@ -1431,6 +1603,13 @@
                     }
                     
                     const uData = snap.data();
+                    // Tải danh sách từ đã thuộc (Mastered Words) từ Cloud xuống Cache
+                    window.masteredVocab = uData.masteredVocab || [];
+                    localStorage.setItem("mastered_vocab", JSON.stringify(window.masteredVocab));
+                    // Đưa mốc thời gian của bài học từ mây xuống máy để học tiếp bài đang dở
+                    if (uData.lastFcTimestamp !== undefined) {
+                        localStorage.setItem('toeic_fc_last_timestamp', uData.lastFcTimestamp.toString());
+                    }
                     
                     // --- XỬ LÝ TRẠNG THÁI CHỜ DUYỆT (PENDING) ---
                     if (uData.status === "pending") {
@@ -1474,7 +1653,7 @@
                     const ngayGiaHanText = uData.expiryDate ? new Date(uData.expiryDate).toLocaleDateString('vi-VN') : "---";
                     document.getElementById('menu-date-display').innerHTML = `<i class="fa-solid fa-clock-rotate-left" style="color: #e1b12c;"></i> Gia hạn: ${ngayGiaHanText}`;
 
-                    updateDoc(userRef, { lastSeen: new Date().getTime() });
+                    updateDoc(userRef, { lastSeen: serverTimestamp() });
 
                     // --- 1. TẮT LOADING NGAY LẬP TỨC ĐỂ GIẢI PHÓNG GIAO DIỆN ---
                     loadingOverlay.style.display = 'none';
@@ -1483,11 +1662,49 @@
                     const dataPromises = []; // Để trống, không bắt học viên tải bài học ngay lúc này
 
                     if (ADMIN_EMAILS.includes(user.email)) {
+                        // 1. CHẾ ĐỘ ADMIN
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+                        
+                        // Ẩn nút Hộp Thư (vì Admin không cần nút này)
+                        const inboxBtn = document.getElementById('btn-inbox-outside');
+                        if(inboxBtn) inboxBtn.style.display = 'none';
+                        
                         dataPromises.push(fetchAdminData()); 
-                        dataPromises.push(fetchAllForAdmin()); // Admin thì vẫn cần tải hết để quản lý
+                        dataPromises.push(fetchAllForAdmin()); 
                     } else {
+                        // 2. CHẾ ĐỘ HỌC VIÊN
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                        
+                        // Hiện nút Hộp Thư
+                        const inboxBtn = document.getElementById('btn-inbox-outside');
+                        if(inboxBtn) inboxBtn.style.display = 'inline-block';
+
+                        // ==========================================================
+                        // BẬT CẢM BIẾN REAL-TIME KIỂM TRA HỘP THƯ CHƯA ĐỌC
+                        // Lọc thẳng trên Javascript để tránh lỗi Index Firestore
+                        // ==========================================================
+                        const qBadge = query(collection(db, "teacher_requests"), where("uid", "==", user.uid));
+                        
+                        onSnapshot(qBadge, (snap) => {
+                            let unreadCount = 0;
+                            // Đếm số thư đã trả lời mà chưa đọc
+                            snap.forEach(doc => {
+                                const data = doc.data();
+                                if (data.status === "answered" && data.isRead === false) {
+                                    unreadCount++;
+                                }
+                            });
+
+                            const badge = document.getElementById('inbox-badge-outside');
+                            if (badge) {
+                                if (unreadCount === 0) {
+                                    badge.style.display = 'none'; // Ẩn chấm đỏ
+                                } else {
+                                    badge.style.display = 'flex'; // Hiện chấm đỏ
+                                    badge.innerText = unreadCount;
+                                }
+                            }
+                        });
                     }
 
                     Promise.all(dataPromises);
@@ -1516,7 +1733,17 @@
             }
         };
 
-        const parseTextWithBlanks = (text) => (text || "").replace(/\[(.*?)\]/g, (m, w) => `<span class="blank-wrapper"><input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}"><span class="correct-hint"></span></span>`);
+        const parseTextWithBlanks = (text) => {
+            if (!text) return "";
+            // Bọc nội dung vào div .sentence-container để kích hoạt Flexbox
+            const processedText = text.replace(/\[(.*?)\]/g, (m, w) => 
+                `<span class="blank-wrapper">
+                    <input type="text" class="blank-input" data-ans="${w}" size="${w.length + 1}">
+                    <span class="correct-hint"></span>
+                </span>`
+            );
+            return `<div class="sentence-container">${processedText}</div>`;
+        };
         // --- BẮT ĐẦU: CODE LƯU TRẠNG THÁI BÀI TẬP ---
         window.markLessonAsPassed = async (lessonId) => {
             if (!auth.currentUser) return;
@@ -1810,7 +2037,7 @@
                             lessonTitle: lessonData.title,
                             score: point10,
                             duration: activeSeconds,
-                            timestamp: Date.now()
+                            timestamp: serverTimestamp()
                         });
                     }
                 } catch(err) {
@@ -1968,14 +2195,16 @@
                 const words = selectedText.split(/\s+/);
 
                 // --- 3. PHÂN LUỒNG XỬ LÝ ---
-                if (words.length === 1) {
+                // NÂNG CẤP: Cho phép bôi đen tối đa 4 chữ để lưu thành "Cụm từ"
+                if (words.length <= 4) {
                     // ==========================================
                     // CHẾ ĐỘ A: TỪ ĐIỂN 3 LỚP (CACHE -> GEMINI AI -> DICTIONARY API)
                     // ==========================================
                     try {
-                        const cleanWord = selectedText.replace(/[^a-zA-Z]/g, '').toLowerCase();
+                        // NÂNG CẤP LÀM SẠCH TỪ: Giữ lại khoảng trắng (\s) và dấu gạch ngang (-)
+                        const cleanWord = selectedText.replace(/[^a-zA-Z\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
                         let data = null;
-                        let isFromFallback = false; // Biến kiểm tra xem có phải đang dùng Từ điển cũ không
+                        let isFromFallback = false; 
 
                         // 🛡️ LỚP 1: KIỂM TRA BỘ NHỚ ĐỆM (CACHE)
                         if (window.dictCache[cleanWord]) {
@@ -1983,10 +2212,11 @@
                             isFromFallback = data._isFallback || false;
                             console.log("⚡ Lớp 1: Lấy từ Cache siêu tốc!");
                         } else {
-                            // 🛡️ LỚP 2: GỌI GEMINI AI (VẮT KIỆT ĐA KEY + NGẮT MẠCH THÔNG MINH)
+                            // 🛡️ LỚP 2: GỌI GEMINI AI
                         try {
-                            const prompt = `Bạn là một từ điển Anh - Việt chuyên nghiệp. Hãy dịch và giải nghĩa từ '${cleanWord}'. Trả về KẾT QUẢ DUY NHẤT LÀ ĐỊNH DẠNG JSON MẢNG (Array) CHUẨN XÁC theo cấu trúc sau, tuyệt đối không giải thích thêm, không dùng markdown:
-[{"word":"${cleanWord}","phonetic":"(Phiên âm)","phonetics":[{"audio":""}],"meanings":[{"partOfSpeech":"(loại từ)","definitions":[{"definition":"(Nghĩa tiếng Việt rõ ràng, ngắn gọn)"}]}]}]`;
+                            // NÂNG CẤP PROMPT: Nhấn mạnh với AI rằng đây có thể là CỤM TỪ
+                            const prompt = `Bạn là một từ điển Anh - Việt chuyên nghiệp. Hãy dịch và giải nghĩa từ/cụm từ '${cleanWord}'. Trả về KẾT QUẢ DUY NHẤT LÀ ĐỊNH DẠNG JSON MẢNG (Array) CHUẨN XÁC theo cấu trúc sau, tuyệt đối không giải thích thêm, không dùng markdown:
+[{"word":"${cleanWord}","phonetic":"(Phiên âm)","phonetics":[{"audio":""}],"meanings":[{"partOfSpeech":"(loại từ/cụm từ)","definitions":[{"definition":"(Nghĩa tiếng Việt rõ ràng, ngắn gọn)"}]}]}]`;
                             
                             let isAiSuccess = false; 
                             let totalKeys = window.GEMINI_KEYS.length;
@@ -2057,57 +2287,65 @@
                         }
                         }
 
-                        // --- KẾT XUẤT GIAO DIỆN (GIỮ NGUYÊN CẤU TRÚC HIỆN TẠI) ---
-                        if (data.title === "No Definitions Found" || !Array.isArray(data)) {
-                            // Cuối cùng vẫn không ra chữ, đưa qua Google Translate cứng
-                            const translated = await translateText(selectedText);
-                            tooltip.innerHTML = `<div style="line-height:1.5; padding: 5px 0;">${translated}</div>`;
-                        } else {
-                            const entry = data[0];
-                            const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || "";
-                            const audioSrc = entry.phonetics && entry.phonetics.find(p => p.audio !== "")?.audio || "";
-                            
-                            let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
-                            
-                            entry.meanings.slice(0, 3).forEach(m => {
-                                const type = m.partOfSpeech === 'noun' ? '(n)' : m.partOfSpeech === 'verb' ? '(v)' : m.partOfSpeech === 'adjective' ? '(adj)' : `(${m.partOfSpeech})`;
-                                m.definitions.slice(0, 2).forEach(def => {
-                                    meaningsHTML += `
-                                        <div class="meaning-choice-card" onclick="handleMeaningSelect(this)">
-                                            <div style="flex:1; font-size:13px; padding-right:10px; line-height:1.4 !important;">
-                                                <b style="color:var(--accent-yellow); font-style:italic;">${type}</b> 
-                                                <span class="def-text-span">${def.definition}</span>
-                                            </div>
-                                            <div class="custom-chk"><i class="fa-solid fa-check" style="color:white; display:none; font-size:12px;"></i></div>
-                                        </div>`;
-                                });
-                            });
-                            meaningsHTML += `</div>`;
+                       // --- KẾT XUẤT GIAO DIỆN CẢ CỤM TỪ VÀ TỪ ĐƠN ---
+                        if (!data || data.title === "No Definitions Found" || !Array.isArray(data)) {
+                            // Nếu API từ điển không tìm thấy (thường là do tra cụm từ), ta dùng Google Dịch và tự tạo form chuẩn để HIỆN NÚT LƯU
+                            const translated = await translateText(cleanWord);
+                            data = [{
+                                word: cleanWord,
+                                phonetic: "",
+                                phonetics: [],
+                                meanings: [{
+                                    partOfSpeech: "phrase", // Tự động gán nhãn là cụm từ (phrase)
+                                    definitions: [{ definition: translated }]
+                                }]
+                            }];
+                            isFromFallback = false; // Đã là tiếng Việt nên không cần chạy hàm dịch lại nữa
+                        }
 
-                            tooltip.innerHTML = `
-                                <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
-                                    <div style="display: flex; align-items: center;">
-                                        <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
-                                        <i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); playVocabAudio('${entry.word.replace(/'/g, "\\'")}');"></i>
+                        // Giờ đây 'data' luôn luôn tồn tại ở dạng mảng chuẩn, chắc chắn 100% sẽ vẽ ra nút Lưu
+                        const entry = data[0];
+                        const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || "";
+                        
+                        let meaningsHTML = `<div style="max-height:200px; overflow-y:auto; margin: 10px 0;" class="custom-scrollbar">`;
+                        
+                        entry.meanings.slice(0, 3).forEach(m => {
+                            const type = m.partOfSpeech === 'noun' ? '(n)' : m.partOfSpeech === 'verb' ? '(v)' : m.partOfSpeech === 'adjective' ? '(adj)' : `(${m.partOfSpeech})`;
+                            m.definitions.slice(0, 2).forEach(def => {
+                                meaningsHTML += `
+                                    <div class="meaning-choice-card" onclick="handleMeaningSelect(this)">
+                                        <div style="flex:1; font-size:13px; padding-right:10px; line-height:1.4 !important;">
+                                            <b style="color:var(--accent-yellow); font-style:italic;">${type}</b> 
+                                            <span class="def-text-span">${def.definition}</span>
                                         </div>
-                                    <span style="color:#00b894; font-size:13px;">${phonetic}</span>
-                                </div>
-                                ${meaningsHTML}
-                                <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
-                                    <input type="text" id="final-meaning-to-save" placeholder="✎ Nhập thêm nghĩa khác nếu có..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
-                                    <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" style="width: 100%; background: linear-gradient(135deg, #00b894, #00cec9); color: white; border: none; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4);">
-                                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> <span>LƯU VÀO ĐÁM MÂY</span>
-                                    </button>
-                                </div>
-                            `;
+                                        <div class="custom-chk"><i class="fa-solid fa-check" style="color:white; display:none; font-size:12px;"></i></div>
+                                    </div>`;
+                            });
+                        });
+                        meaningsHTML += `</div>`;
 
-                            // CHỈ DÙNG GOOGLE DỊCH LẠI NẾU ĐANG LẤY TỪ API CŨ (Vì API cũ trả tiếng Anh)
-                            // Còn Gemini đã trả sẵn Tiếng Việt rồi thì không cần dịch nữa (Nhanh gấp đôi!)
-                            if (isFromFallback) {
-                                tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
-                                    span.innerText = await translateText(span.innerText);
-                                });
-                            }
+                        tooltip.innerHTML = `
+                            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px !important; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center;">
+                                    <b style="color:var(--accent-yellow); font-size:20px;">${entry.word}</b>
+                                    <i class="fa-solid fa-volume-high dict-speaker" onclick="event.stopPropagation(); playVocabAudio('${entry.word.replace(/'/g, "\\'")}')"></i>
+                                    </div>
+                                <span style="color:#00b894; font-size:13px;">${phonetic}</span>
+                            </div>
+                            ${meaningsHTML}
+                            <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                <input type="text" id="final-meaning-to-save" placeholder="✎ Nhập thêm nghĩa khác nếu có..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #222f3e; color: white; font-size: 13.5px; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--success)'" onblur="this.style.borderColor='#444'">
+                                <button id="btn-save-cloud" onclick="processSaveFromTooltip('${entry.word.replace(/'/g, "\\'")}')" style="width: 100%; background: linear-gradient(135deg, #00b894, #00cec9); color: white; border: none; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4);">
+                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 18px;"></i> <span>LƯU VÀO ĐÁM MÂY</span>
+                                </button>
+                            </div>
+                        `;
+
+                        // Dịch lại bằng Google nếu lấy từ API từ điển gốc (tiếng Anh)
+                        if (isFromFallback) {
+                            tooltip.querySelectorAll('.def-text-span').forEach(async (span) => {
+                                span.innerText = await translateText(span.innerText);
+                            });
                         }
                     } catch (err) {
                         const translated = await translateText(selectedText);
@@ -2444,7 +2682,7 @@
                 const u = d.data(); 
                 if(ADMIN_EMAILS.includes(u.email)) return;
                 
-                const lastSeenStr = u.lastSeen ? new Date(u.lastSeen).toLocaleString('vi-VN') : '---';
+                const lastSeenStr = u.lastSeen ? (u.lastSeen.toDate ? u.lastSeen.toDate().toLocaleString('vi-VN') : new Date(u.lastSeen).toLocaleString('vi-VN')) : '---';   
 
                 // --- XỬ LÝ GỘP THÔNG TIN (Họ tên, SĐT, Email) ---
                 const dispName = u.fullName || "Học viên cũ"; 
@@ -3162,6 +3400,640 @@
                 document.getElementById('translation-tooltip').style.display = 'none';
             }, 1000);        
         };
+        // ====================================================================
+        // 📇 HỆ THỐNG FLASHCARDS AI (3 BƯỚC HỌC SÂU)
+        // ====================================================================
+        window.fcList = [];
+        window.fcIndex = 0;
+        window.fcStep = 1; // 1: Anh->Việt, 2: Việt->Anh, 3: Make Sentence
+        // --- HÀM BỎ QUA TỪ (QUA TỪ MỚI) ---
+        window.skipToNextFcWord = () => {
+            const skipBtn = document.getElementById('fc-skip-btn');
+            // Khóa nút và hiện hiệu ứng xoay bằng ID (an toàn tuyệt đối)
+            if (skipBtn) {
+                skipBtn.disabled = true;
+                skipBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang qua...";
+            }
+            
+            setTimeout(() => {
+                window.fcIndex++;
+                window.fcStep = 1;
+                window.renderFcCard();
+            }, 300);
+        };
+
+        // --- HÀM ĐÁNH DẤU ĐÃ THUỘC LÒNG ---
+        window.masterFcWord = async () => {
+            const masterBtn = document.getElementById('fc-master-btn');
+            if (masterBtn) {
+                masterBtn.disabled = true;
+                masterBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang lưu...";
+            }
+
+            const currentWord = window.fcList[window.fcIndex].word.toLowerCase();
+
+            if (!window.masteredVocab) window.masteredVocab = JSON.parse(localStorage.getItem("mastered_vocab")) || [];
+            if (!window.masteredVocab.includes(currentWord)) {
+                window.masteredVocab.push(currentWord);
+                localStorage.setItem("mastered_vocab", JSON.stringify(window.masteredVocab));
+
+                if (auth.currentUser) {
+                    const userRef = doc(db, "users", auth.currentUser.uid);
+                    updateDoc(userRef, { masteredVocab: window.masteredVocab }).catch(e => console.log("Lỗi đồng bộ mây:", e));
+                }
+            }
+
+            showBeautifulToast(`Đã ghi nhớ "${currentWord}". Sẽ không hỏi lại!`, "success");
+            
+            setTimeout(() => {
+                window.skipToNextFcWord();
+            }, 400);
+        };
+        // --- HÀM VẼ GIAO DIỆN (ĐÃ NÂNG CẤP TỪ LOẠI & CHUYỂN BÀI MỚI) ---
+        window.renderFcCard = () => {
+            const actionBtn = document.getElementById('fc-action-btn');
+            const skipBtn = document.getElementById('fc-skip-btn');
+            const masterBtn = document.getElementById('fc-master-btn');
+            const btnGroup = document.getElementById('fc-button-group'); 
+            const aiFeedback = document.getElementById('fc-ai-feedback');
+
+            // 1. KHI HỌC XONG HẾT TỪ TRONG BÀI NÀY
+            if (window.fcIndex >= window.fcList.length) {
+                let endBtnHtml = "";
+                if (window.fcMode === 'toeic') {
+                    // SỬA LỖI CHUYỂN BÀI: Ép hệ thống cộng thêm 1 vào index để sang bài mới thực sự
+                    endBtnHtml = `<button onclick="let idx = parseInt(localStorage.getItem('toeic_fc_lesson_index')||'0'); localStorage.setItem('toeic_fc_lesson_index', (idx + 1).toString()); window.startToeicFlashcards();" class="btn-main" style="background: linear-gradient(135deg, #0984e3, #6c5ce7); width: auto; padding: 12px 30px; margin-top: 15px;"><i class="fa-solid fa-forward-step"></i> Quét bài tiếp theo</button>`;
+                } else {
+                    endBtnHtml = `<button onclick="document.getElementById('flashcard-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: #333; width: auto; padding: 12px 30px; margin-top: 15px;">Đóng Lại</button>`;
+                }
+
+                document.getElementById('fc-card-body').innerHTML = `
+                    <div style="font-size: 50px; margin-bottom: 10px;">🎓</div>
+                    <h3 style="color: var(--success); margin: 0;">Tuyệt vời!</h3>
+                    <p style="color: #666; margin-top: 5px;">Bạn đã hoàn thành danh sách từ vựng này.</p>
+                    <div style="margin-top: 10px;">${endBtnHtml}</div>
+                `;
+                
+                if (btnGroup) btnGroup.style.display = 'none'; 
+                if (aiFeedback) aiFeedback.style.display = 'none';
+                document.getElementById('fc-progress').innerText = "Hoàn thành";
+                return;
+            }
+
+            // 2. KHI ĐANG HỌC: MỞ KHÓA NÚT
+            if (btnGroup) btnGroup.style.display = 'flex';
+            if (actionBtn) { actionBtn.style.display = 'block'; actionBtn.disabled = false; actionBtn.innerHTML = "Kiểm tra"; }
+            if (skipBtn) { skipBtn.disabled = false; skipBtn.innerHTML = "⏭️ Bỏ qua"; }
+            if (masterBtn) { masterBtn.disabled = false; masterBtn.innerHTML = "🧠 Đã thuộc"; }
+
+            // 3. VẼ NỘI DUNG TỪ MỚI
+            const currentWord = window.fcList[window.fcIndex];
+            const cardBody = document.getElementById('fc-card-body');
+            
+            document.getElementById('fc-progress').innerText = `${window.fcIndex + 1}/${window.fcList.length}`;
+            if (aiFeedback) aiFeedback.style.display = 'none';
+
+            // THUẬT TOÁN TÁCH TỪ LOẠI (POS) ĐỂ HIỂN THỊ CẠNH TIẾNG ANH
+            let posTag = "";
+            const posMatch = currentWord.meaning.match(/^\((.*?)\)/); // Tìm chữ trong ngoặc () ở đầu câu
+            if (posMatch) {
+                let posText = posMatch[1] === "Từ vựng" ? "vocab" : posMatch[1]; // Đổi (Từ vựng) thành (vocab) cho Tây
+                posTag = `<span style="font-size: 18px; color: #7f8c8d; font-weight: normal; margin-right: 8px;">(${posText})</span>`;
+            }
+
+            if (window.fcStep === 1) {
+                cardBody.innerHTML = `
+                    <div style="font-size: 13px; color: #999; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Bước 1/3: Nhớ Nghĩa</div>
+                    
+                    <div style="display: flex; align-items: baseline; justify-content: center; margin-bottom: 5px;">
+                        ${posTag}
+                        <div style="font-size: 32px; font-weight: bold; color: var(--primary);">${currentWord.word}</div>
+                    </div>
+
+                    <i class="fa-solid fa-volume-high dict-speaker" onclick="window.playVocabAudio('${currentWord.word.replace(/'/g, "\\'")}')" style="font-size: 20px; color: #a2e043; cursor: pointer; margin-bottom: 20px;"></i>
+                    <input type="text" id="fc-input-vi" placeholder="Nhập nghĩa và từ loại (VD: (n) quả táo)..." style="text-align: center; border: 2px solid var(--accent-yellow);">
+                `;
+                actionBtn.onclick = function() {
+                    this.disabled = true;
+                    this.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang check...";
+                    setTimeout(() => window.processFcStep1(currentWord), 300);
+                };
+
+            } else if (window.fcStep === 2) {
+                const cleanMeaning = currentWord.meaning.replace(/\|/g, '<br>');
+                cardBody.innerHTML = `
+                    <div style="font-size: 13px; color: #999; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Bước 2/3: Nhớ Mặt Từ</div>
+                    <div style="font-size: 18px; font-weight: 500; color: var(--text-dark); margin-bottom: 20px; line-height: 1.5;">${cleanMeaning}</div>
+                    <input type="text" id="fc-input-en" placeholder="Gõ chính xác từ tiếng Anh..." style="text-align: center; border: 2px solid var(--accent-yellow); font-weight: bold; font-size: 18px;">
+                `;
+                actionBtn.onclick = function() {
+                    this.disabled = true;
+                    this.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang check...";
+                    setTimeout(() => window.processFcStep2(currentWord), 300);
+                };
+
+            } else if (window.fcStep === 3) {
+                cardBody.innerHTML = `
+                    <div style="font-size: 13px; color: #999; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Bước 3/3: Ứng Dụng Thực Tế</div>
+                    <div style="margin-bottom: 15px;">Hãy viết 1 câu tiếng Anh có sử dụng từ:</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--primary); margin-bottom: 15px; display: inline-block; padding: 5px 15px; background: #f1f2f6; border-radius: 10px;">${currentWord.word}</div>
+                    <textarea id="fc-input-sentence" rows="3" placeholder="Gõ câu của bạn vào đây..." style="border: 2px solid var(--primary); resize: none;"></textarea>
+                `;
+                actionBtn.innerHTML = "Nhờ Hệ Thống Chấm Bài";
+                actionBtn.onclick = () => window.processFcStep3(currentWord); 
+            }
+        };
+
+        // --- XỬ LÝ LƯU TRÌNH BƯỚC 1 ---
+        window.processFcStep1 = (currentWord) => {
+            const inputVal = document.getElementById('fc-input-vi').value.trim();
+            const actionBtn = document.getElementById('fc-action-btn'); // Lấy nút ra để xử lý
+            
+            if(!inputVal) { 
+                showBeautifulToast("Bạn chưa nhập nghĩa kìa!", "warning"); 
+                // Bổ sung: Mở khóa nút và trả lại tên nếu học viên quên chưa nhập
+                actionBtn.disabled = false; 
+                actionBtn.innerText = "Kiểm tra";
+                return; 
+            }
+            
+            const cleanMeaning = currentWord.meaning.replace(/\|/g, '<br>• ');
+            document.getElementById('fc-card-body').innerHTML += `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: left;">
+                    <span style="font-size: 13px; color: #666;">Đáp án:</span><br>
+                    <b style="color: var(--success); font-size: 15px;">• ${cleanMeaning}</b>
+                </div>
+            `;
+            
+            // Bổ sung: Mở khóa nút để học viên có thể bấm "Tiếp tục"
+            actionBtn.disabled = false;
+            actionBtn.innerText = "Tiếp tục 👉";
+            actionBtn.onclick = () => { window.fcStep = 2; window.renderFcCard(); };
+        };
+
+        // --- XỬ LÝ LƯU TRÌNH BƯỚC 2 ---
+        window.processFcStep2 = (currentWord) => {
+            const inputEl = document.getElementById('fc-input-en');
+            const inputVal = inputEl.value.trim().toLowerCase();
+            const actionBtn = document.getElementById('fc-action-btn'); // Lấy nút
+            
+            if (inputVal === currentWord.word.toLowerCase()) {
+                inputEl.style.borderColor = "var(--success)";
+                inputEl.style.background = "#e1fff0";
+                showBeautifulToast("Chính xác!", "success");
+                
+                // Bổ sung: Mở khóa nút để sang bước Đặt câu
+                actionBtn.disabled = false; 
+                actionBtn.innerText = "Tuyệt! Đặt Câu 👉";
+                actionBtn.onclick = () => { window.fcStep = 3; window.renderFcCard(); };
+            } else {
+                inputEl.style.borderColor = "var(--danger)";
+                inputEl.style.background = "#ffeaea";
+                showBeautifulToast("Sai rồi, thử lại nhé!", "danger");
+
+                // Đã có mở khóa cho trường hợp sai
+                actionBtn.disabled = false; 
+                actionBtn.innerHTML = "Kiểm tra lại";
+            }
+        };
+
+        // --- XỬ LÝ LƯU TRÌNH BƯỚC 3 (GỌI GEMINI AI CHẤM CÂU) ---
+        window.processFcStep3 = async (currentWord) => {
+            const sentence = document.getElementById('fc-input-sentence').value.trim();
+            if (sentence.split(' ').length < 3) {
+                showBeautifulToast("Câu hơi ngắn, hãy viết dài hơn chút nhé!", "warning");
+                return;
+            }
+
+            const actionBtn = document.getElementById('fc-action-btn');
+            const feedbackBox = document.getElementById('fc-ai-feedback');
+            
+            actionBtn.innerText = "⏳ Hệ thống đang chấm bài...";
+            actionBtn.disabled = true;
+
+            const prompt = `Học sinh đang học từ vựng "${currentWord.word}" (nghĩa: ${currentWord.meaning}). Học sinh đã đặt câu sau: "${sentence}".
+            Hãy nhận xét ngắn gọn (tối đa 3 câu) bằng tiếng Việt: Câu này có đúng ngữ pháp tiếng Anh và đúng ngữ cảnh của từ không? Nếu sai, hãy sửa lại cho đúng. Trả lời trực tiếp, không dùng markdown.`;
+
+            let isAiSuccess = false;
+            let totalKeys = window.GEMINI_KEYS.length;
+            if (!window.keyCooldowns) window.keyCooldowns = JSON.parse(sessionStorage.getItem("gemini_cooldowns")) || {};
+
+            try {
+                // VÒNG LẶP GỌI AI (TÁI SỬ DỤNG HỆ THỐNG TRÂU BÒ)
+                for (let i = 0; i < totalKeys; i++) {
+                    const currentKey = typeof window.getGeminiKey === 'function' ? window.getGeminiKey() : "";
+                    const cooldownTime = window.keyCooldowns[currentKey] || 0;
+                    
+                    if (Date.now() < cooldownTime) continue; // Né key đang bị phạt
+
+                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentKey.trim()}`;
+                    const res = await fetch(geminiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+
+                    if (res.ok) {
+                        const json = await res.json();
+                        const aiReview = json.candidates[0].content.parts[0].text;
+                        
+                        feedbackBox.style.display = 'block';
+                        feedbackBox.innerHTML = `<b>🤖 Nhận xét từ hệ thống:</b><br>${aiReview}`;
+                        isAiSuccess = true;
+                        break;
+                    } else if (res.status === 429) {
+                        window.keyCooldowns[currentKey] = Date.now() + 60000;
+                        sessionStorage.setItem("gemini_cooldowns", JSON.stringify(window.keyCooldowns));
+                    }
+                }
+
+                if (!isAiSuccess) throw new Error("Hệ thống đang bận");
+
+            } catch (e) {
+                // KHI AI SẬP -> TỰ ĐỘNG GỬI CÂU CHO ADMIN TRÊN FIREBASE
+                feedbackBox.style.display = 'block';
+                feedbackBox.style.borderLeftColor = "var(--danger)";
+                feedbackBox.innerHTML = `<b>⏳ Đang chuyển câu cho Giáo viên...</b>`;
+                
+                try {
+                    await addDoc(collection(db, "teacher_requests"), {
+                        uid: auth.currentUser.uid,
+                        studentName: document.getElementById('menu-email-display').innerText || auth.currentUser.email,
+                        word: currentWord.word,
+                        sentence: sentence,
+                        status: "pending", // pending: đang chờ, answered: đã trả lời
+                        teacherReply: "",
+                        createdAt: serverTimestamp() // Dùng giờ Server để chống hack
+                    });
+
+                    feedbackBox.innerHTML = `<b>Hệ Thống Đang Bận Chấm Bài Khác:</b> đã <b>TỰ ĐỘNG</b> gửi câu của bạn cho Giáo viên chấm. Bạn có thể xem kết quả ở <b>Hộp Thư</b> nhé!`;
+                    
+                    // Gửi xong thì cho qua câu tiếp theo luôn
+                    actionBtn.innerText = "Học từ tiếp theo 👉";
+                    actionBtn.disabled = false;
+                    actionBtn.onclick = () => {
+                        window.fcIndex++;
+                        window.fcStep = 1;
+                        window.renderFcCard();
+                    };
+
+                } catch (sendErr) {
+                    // Nếu rớt mạng không gửi được lên mây
+                    feedbackBox.innerHTML = `<b>❌ Lỗi mạng:</b> Không thể chấm điểm và cũng không thể gửi cho giáo viên. Hãy kiểm tra kết nối mạng của bạn!`;
+                    actionBtn.innerText = "Chấm lại câu này";
+                    actionBtn.disabled = false;
+                    actionBtn.onclick = () => window.processFcStep3(currentWord);
+                }
+            }
+
+            // Mở nút đi tiếp và cho phép BẤM LẠI để thử lại câu này
+            actionBtn.innerText = "Chấm lại câu này";
+            actionBtn.disabled = false;
+            
+            // Xóa sự kiện chuyển câu cũ, gán lại sự kiện chấm bài
+            actionBtn.onclick = () => processFcStep3(currentWord);
+
+            // Mở nút đi tiếp sau khi chấm xong
+            actionBtn.innerText = "Học từ tiếp theo 👉";
+            actionBtn.disabled = false;
+            actionBtn.onclick = () => {
+                window.fcIndex++;
+                window.fcStep = 1;
+                renderFcCard();
+            };
+        };
+        // ====================================================================
+        // 🚀 HỆ THỐNG TRÍCH XUẤT TỪ VỰNG TOEIC (THUẬT TOÁN TẢI PHÂN TRANG)
+        // ====================================================================
+        window.startToeicFlashcards = async () => {
+            window.fcMode = 'toeic'; 
+
+            // 1. Lấy danh sách "Sổ đen" (từ đã thuộc) từ máy
+            if (!window.masteredVocab) {
+                window.masteredVocab = JSON.parse(localStorage.getItem("mastered_vocab")) || [];
+            }
+
+            // --- HIỆU ỨNG LOADING CHỐNG SPAM ---
+            const btn = document.querySelector("#flashcard-tab .btn-main");
+            const oldText = btn ? btn.innerHTML : "";
+            if (btn) { 
+                btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang quét kho dữ liệu..."; 
+                btn.disabled = true; 
+            }
+
+            // 2. Lấy mốc thời gian (Timestamp) của bài học cuối cùng đã quét
+            let lastTimestamp = parseInt(localStorage.getItem('toeic_fc_last_timestamp')) || null;
+            let targetLesson = null;
+            let rawText = "";
+
+            try {
+                // 3. VÒNG LẶP TẢI TỪNG CỤM (25 BÀI / LẦN)
+                while (!targetLesson) {
+                    let fcQuery;
+                    if (lastTimestamp) {
+                        // Tải 25 bài học cũ hơn mốc thời gian hiện tại
+                        fcQuery = query(collection(db, "lessons"), orderBy("createdAt", "desc"), startAfter(lastTimestamp), limit(25));
+                    } else {
+                        // Tải 25 bài mới nhất nếu mới học lần đầu
+                        fcQuery = query(collection(db, "lessons"), orderBy("createdAt", "desc"), limit(25));
+                    }
+
+                    const snap = await getDocs(fcQuery);
+                    
+                    // Hết sạch dữ liệu trong kho -> Thoát vòng lặp
+                    if (snap.empty) break;
+
+                    let chunk = [];
+                    snap.forEach(d => chunk.push({ ...d.data(), id: d.id }));
+
+                    // 4. Quét từng bài trong cụm 25 bài vừa tải
+                    for (let l of chunk) {
+                        lastTimestamp = l.createdAt; // Cập nhật mốc thời gian liên tục
+
+                        if (l.type === 'quiz') {
+                            let temp = (l.question || "") + " " + (l.groupContext || "") + " " + (l.optA || "");
+                            if (l.questions) l.questions.forEach(q => temp += (q.text || "") + " ");
+                            
+                            // Kiểm tra bài này có từ mới nào không?
+                            const regex = /\[(.*?)\]/g;
+                            let match;
+                            let hasNewWord = false;
+                            while ((match = regex.exec(temp)) !== null) {
+                                let cleanW = match[1].replace(/[^a-zA-Z\s]/g, '').trim().toLowerCase();
+                                if (cleanW && !window.masteredVocab.includes(cleanW)) {
+                                    hasNewWord = true;
+                                    break;
+                                }
+                            }
+
+                            if (temp.trim().length > 20 && hasNewWord) { 
+                                targetLesson = l;
+                                rawText = temp;
+                                break; // Dừng vòng lặp for ngay lập tức vì đã tìm thấy bài
+                            }
+                        }
+                    }
+                    // Nếu đã tìm thấy bài phù hợp, dừng vòng lặp while (không tải thêm cụm mới lên bộ nhớ nữa)
+                    if (targetLesson) break; 
+                }
+            } catch (err) {
+                console.error("Lỗi tải phân trang:", err);
+                if (btn) { btn.innerHTML = oldText; btn.disabled = false; }
+                return showBeautifulToast("Lỗi mạng, không quét được bài!", "danger");
+            }
+
+            // 5. XỬ LÝ KHI QUÉT HẾT TOÀN BỘ KHO ĐỀ
+            if (!targetLesson) {
+                if (btn) { btn.innerHTML = oldText; btn.disabled = false; }
+                showBeautifulToast("🎉 Bạn đã thuộc lòng toàn bộ kho từ vựng hiện có!", "success");
+                localStorage.removeItem('toeic_fc_last_timestamp'); // Xóa mốc thời gian để vòng lặp bắt đầu lại từ bài mới nhất
+                return;
+            }
+
+            // 6. LƯU TRỮ TIẾN ĐỘ SONG SONG (CACHE & CLOUD) BẰNG MỐC THỜI GIAN
+            localStorage.setItem('toeic_fc_last_timestamp', lastTimestamp.toString());
+            if (auth.currentUser) {
+                const userRef = doc(db, "users", auth.currentUser.uid);
+                updateDoc(userRef, { lastFcTimestamp: lastTimestamp }).catch(e => console.log("Lỗi đồng bộ mốc thời gian:", e));
+            }
+
+            // 7. XỬ LÝ DỊCH VÀ TRÍCH XUẤT TỪ VỰNG
+            const cacheKey = `fc_no_ai_cache_${targetLesson.id}`;
+            const cachedData = localStorage.getItem(cacheKey);
+            let words = [];
+
+            if (cachedData) {
+                let tempWords = JSON.parse(cachedData);
+                // Lọc bỏ những từ học viên vừa bấm "Đã thuộc" gần đây
+                words = tempWords.filter(w => !window.masteredVocab.includes(w.word.toLowerCase()));
+                
+                if (words.length === 0) {
+                    // Bài này cache có nhưng thuộc hết rồi, gọi đệ quy để quét tiếp cụm bài sau
+                    return window.startToeicFlashcards();
+                }
+                if(btn) { btn.innerHTML = oldText; btn.disabled = false; }
+            } else {
+                const regex = /\[(.*?)\]/g;
+                let match;
+                const extractedWords = new Set();
+                while ((match = regex.exec(rawText)) !== null) {
+                    let cleanWord = match[1].replace(/[^a-zA-Z\s]/g, '').trim().toLowerCase();
+                    if (cleanWord && cleanWord.length > 1 && !window.masteredVocab.includes(cleanWord)) {
+                        extractedWords.add(cleanWord);
+                    }
+                }
+
+                const uniqueWordsArray = Array.from(extractedWords).slice(0, 7);
+
+                for (let w of uniqueWordsArray) {
+                    try {
+                        let translated = await translateText(w);
+                        words.push({ word: w, meaning: `(vocab) ${translated}` });
+                        await new Promise(res => setTimeout(res, 200)); 
+                    } catch (e) { console.warn("Lỗi dịch:", w); }
+                }
+
+                if(btn) { btn.innerHTML = oldText; btn.disabled = false; }
+                if (words.length > 0) localStorage.setItem(cacheKey, JSON.stringify(words));
+            }
+
+            // 8. MỞ GIAO DIỆN HỌC
+            if (words && words.length > 0) {
+                window.fcList = words;
+                window.fcIndex = 0;
+                window.fcStep = 1;
+                document.getElementById('flashcard-modal').style.display = 'block';
+                window.renderFcCard();
+            } else {
+                // Tự gọi lại chính nó để quét tiếp nếu không may từ trong bài bị lỗi rỗng
+                window.startToeicFlashcards();
+            }
+        };
+        // --- HỌC VIÊN: MỞ HỘP THƯ ---
+        window.showInboxModal = async () => {
+            const modal = document.getElementById('inbox-modal');
+            const list = document.getElementById('inbox-list');
+            modal.style.display = 'block';
+            list.innerHTML = "⏳ Đang tải dữ liệu...";
+
+            try {
+                // Tải thư theo UID học viên
+                const q = query(collection(db, "teacher_requests"), where("uid", "==", auth.currentUser.uid));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    list.innerHTML = "<p style='text-align: center; color: #999;'>Hộp thư trống. AI đang xử lý rất tốt bài của bạn!</p>";
+                    return;
+                }
+
+                // Gom và Sắp xếp thư mới nhất lên đầu
+                let requests = [];
+                snap.forEach(docSnap => requests.push({ id: docSnap.id, ...docSnap.data() }));
+                requests.sort((a, b) => {
+                    const timeA = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
+                    const timeB = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
+                    return timeB - timeA; 
+                });
+
+                // GIẢI PHÁP CHỐNG QUÁ TẢI: Chỉ cắt lấy 30 thư mới nhất để hiển thị
+                const displayRequests = requests.slice(0, 30);
+
+                let html = "";
+                displayRequests.forEach(req => {
+                    const isAnswered = req.status === "answered";
+                    
+                    // NẾU THƯ NÀY LÀ MỚI (CHƯA ĐỌC), CẬP NHẬT THÀNH ĐÃ ĐỌC TRÊN DB
+                    // Nhờ Firebase Rules đã sửa ở Bước 1, lệnh này giờ sẽ chạy thành công 100%
+                    if (req.isRead === false) {
+                        updateDoc(doc(db, "teacher_requests", req.id), { isRead: true });
+                    }
+
+                    const badge = isAnswered 
+                        ? `<span style="background: var(--success); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;"><i class="fa-solid fa-check"></i> Có Kết Quả</span>` 
+                        : `<span style="background: #f39c12; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;"><i class="fa-solid fa-clock"></i> Đang Chờ</span>`;
+                    
+                    const replyBox = isAnswered 
+                        ? `<div style="background: white; border-radius: 8px; padding: 12px; border-left: 4px solid var(--success); margin-top: 12px;">
+                               <div style="font-size: 12px; color: var(--success); font-weight: bold; margin-bottom: 5px;">👨‍🏫 Giáo viên nhận xét:</div>
+                               <div style="font-size: 15px; color: #2d3436; line-height: 1.5;">${req.teacherReply.replace(/\n/g, '<br>')}</div>
+                           </div>` 
+                        : `<div style="background: rgba(243, 156, 18, 0.1); border-radius: 8px; padding: 10px; border-left: 4px solid #f39c12; margin-top: 12px; font-size: 13.5px; color: #d35400;">
+                               Hệ thống đã chuyển câu này tới Giáo viên. Lát quay lại check kết quả nhé!
+                           </div>`;
+
+                    html += `
+                        <div style="background: #ffffff; border: 1px solid #e0d0a0; padding: 18px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); position: relative;">
+                            
+                            <!-- NÚT XÓA THƯ NẰM Ở GÓC TRÊN CÙNG BÊN PHẢI -->
+                            <i class="fa-solid fa-xmark" onclick="deleteInboxMessage('${req.id}')" style="position: absolute; top: 15px; right: 15px; color: #bdc3c7; cursor: pointer; font-size: 18px; padding: 5px; transition: 0.2s;" onmouseover="this.style.color='#ff7675'" onmouseout="this.style.color='#bdc3c7'" title="Dọn dẹp thư này"></i>
+
+                            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-right: 30px;">
+                                <div style="font-size: 13.5px; color: #555; margin-right: auto;">Từ khóa: <b style="color: var(--primary); background: #fdfae6; padding: 2px 6px; border-radius: 4px;">${req.word}</b></div>
+                                ${badge}
+                            </div>
+                            <div style="font-size: 16px; color: #333; font-style: italic; border-left: 3px solid #ccc; padding-left: 10px; line-height: 1.4;">
+                                "${req.sentence}"
+                            </div>
+                            ${replyBox}
+                        </div>
+                    `;
+                });
+                
+                // Nếu số lượng thư gốc lớn hơn 30, hiển thị thêm câu thông báo
+                if (requests.length > 30) {
+                    html += `<div style="text-align: center; color: #999; font-size: 13px; margin-top: 10px;">Chỉ hiển thị 30 thư gần nhất. Hãy xóa bớt thư cũ để xem thêm.</div>`;
+                }
+
+                list.innerHTML = html;
+            } catch (e) {
+                list.innerHTML = "❌ Lỗi không tải được thư!";
+                console.error(e);
+            }
+        };
+
+        // --- ADMIN: TẢI DANH SÁCH CHỜ CHẤM (GIAO DIỆN BẢNG 2 CỘT) ---
+        window.loadTeacherRequests = async () => {
+            const listDiv = document.getElementById('support-requests-list');
+            listDiv.innerHTML = "⏳ Đang tải dữ liệu chờ chấm...";
+
+            try {
+                const q = query(collection(db, "teacher_requests"), where("status", "==", "pending"));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    listDiv.innerHTML = "<div style='background: #e1fff0; padding: 20px; border-radius: 15px; border: 1px dashed var(--success); text-align: center; color: var(--success); font-weight: bold;'>🎉 Tuyệt vời! Hiện không có bài tập nào đang chờ chấm.</div>";
+                    return;
+                }
+
+                // Gom dữ liệu và sắp xếp bài cũ nhất lên đầu để chấm trước
+                let requests = [];
+                snap.forEach(docSnap => requests.push({ id: docSnap.id, ...docSnap.data() }));
+                requests.sort((a, b) => {
+                    const timeA = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
+                    const timeB = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
+                    return timeA - timeB; 
+                });
+
+                let html = `
+                    <table class="user-table" style="width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: white;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50%; background: var(--primary); color: white; padding: 15px; text-align: left;">📝 Thông tin & Câu viết của Học viên</th>
+                                <th style="width: 50%; background: var(--primary); color: white; padding: 15px; text-align: left;">👨‍🏫 Góp ý từ Giáo viên</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                requests.forEach((req, index) => {
+                    // Lấy thời gian format chuẩn
+                    const dateStr = req.createdAt ? (req.createdAt.toDate ? req.createdAt.toDate().toLocaleString('vi-VN') : new Date(req.createdAt).toLocaleString('vi-VN')) : "";
+                    
+                    html += `
+                        <tr>
+                            <!-- CỘT 1: CÂU VIẾT -->
+                            <td style="vertical-align: top; padding: 15px; border: 1px solid #eee; background: #fafafa;">
+                                <div style="display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 12px;">
+                                    <b>👤 ${req.studentName}</b>
+                                    <span>${dateStr}</span>
+                                </div>
+                                <div style="margin-bottom: 10px; font-size: 14px;">
+                                    Từ khóa bài học: <b style="color: var(--primary); background: #f1f2f6; padding: 4px 8px; border-radius: 5px;">${req.word}</b>
+                                </div>
+                                <div style="font-size: 16px; color: #333; font-weight: 500; font-style: italic; border-left: 3px solid var(--accent-yellow); padding-left: 12px; line-height: 1.5;">
+                                    "${req.sentence}"
+                                </div>
+                            </td>
+
+                            <!-- CỘT 2: KHUNG GÓP Ý CỦA GIÁO VIÊN -->
+                            <td style="vertical-align: top; padding: 15px; border: 1px solid #eee; background: white;">
+                                <textarea id="reply-${req.id}" rows="4" placeholder="Gõ nhận xét, chỉnh sửa lỗi sai cho học viên..." style="width: 100%; border-radius: 8px; border: 1px solid #ccc; padding: 10px; margin-bottom: 12px; resize: vertical; box-sizing: border-box; font-family: inherit; font-size: 14.5px;"></textarea>
+                                <div style="text-align: right;">
+                                    <button onclick="submitTeacherReply('${req.id}')" class="btn-main" style="background: var(--success); width: auto; padding: 10px 20px; font-size: 14px; margin: 0; display: inline-block;">
+                                        <i class="fa-solid fa-paper-plane"></i> Gửi Kết Quả
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</tbody></table>`;
+                listDiv.innerHTML = html;
+            } catch (e) {
+                listDiv.innerHTML = "❌ Lỗi tải dữ liệu!";
+                console.error(e);
+            }
+        };
+
+        // --- ADMIN: LƯU BÀI ĐÃ CHẤM ---
+        window.submitTeacherReply = async (ticketId) => {
+            const replyText = document.getElementById(`reply-${ticketId}`).value.trim();
+            if (!replyText) return showBeautifulToast("Vui lòng nhập nhận xét!", "warning");
+
+            try {
+                await updateDoc(doc(db, "teacher_requests", ticketId), {
+                    status: "answered",
+                    teacherReply: replyText,
+                    answeredAt: serverTimestamp(),
+                    isRead: false // <--- THÊM DÒNG NÀY ĐỂ BÁO CÓ THƯ MỚI CHƯA ĐỌC
+                });
+                showBeautifulToast("Đã trả bài cho học viên!", "success");
+                loadTeacherRequests(); // Tải lại danh sách (Câu vừa chấm sẽ biến mất)
+            } catch (e) {
+                showBeautifulToast("Lỗi: " + e.message, "danger");
+            }
+        };
+        // --- HỌC VIÊN: XÓA THƯ KHỎI HỘP THƯ (BẤM LÀ XÓA LUÔN) ---
+        window.deleteInboxMessage = async (id) => {
+            try {
+                await deleteDoc(doc(db, "teacher_requests", id));
+                showBeautifulToast("Đã dọn dẹp thư!", "success");
+                showInboxModal(); // Tự động tải lại hộp thư ngay lập tức để bức thư biến mất
+            } catch(e) {
+                showBeautifulToast("Lỗi khi xóa: " + e.message, "danger");
+            }
+        };
     </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -3173,6 +4045,7 @@
                 </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="startFlashcards()" class="btn-main" style="background: #0984e3; flex: 1; margin: 0;">📇 Flashcards siêu cấp</button>
                 <button onclick="startVocabQuiz()" class="btn-main" style="background: var(--success); flex: 1; margin: 0;">🚀 Ôn Tập Siêu Tốc</button>
                 <button onclick="document.getElementById('notebook-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark); flex: 1; margin: 0;">Đóng</button>
             </div>
@@ -3184,6 +4057,31 @@
             <div id="vocab-quiz-area" style="margin: 20px 0; text-align: left;">
                 </div>
             <button onclick="document.getElementById('vocab-quiz-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark);">Dừng Ôn Tập</button>
+        </div>
+    </div>
+    <!-- 📇 BẢNG FLASHCARD AI -->
+    <div id="flashcard-modal" class="modal">
+        <div class="modal-content" style="max-width: 550px; text-align: center; padding: 30px 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px; margin-bottom: 20px;">
+                <h3 style="color: var(--primary); margin: 0;">📇 Luyện Tập Chuyên Sâu</h3>
+                <span id="fc-progress" style="font-weight: bold; color: #666; background: #eee; padding: 4px 10px; border-radius: 15px; font-size: 13px;">1/10</span>
+            </div>
+
+            <!-- Khung hiển thị nội dung động -->
+            <div id="fc-card-body" style="background: white; border: 2px solid #e0d0a0; border-radius: 20px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); min-height: 220px; display: flex; flex-direction: column; justify-content: center;">
+                <!-- Dữ liệu sẽ được JS nhét vào đây -->
+            </div>
+
+            <!-- Khung phản hồi AI -->
+            <div id="fc-ai-feedback" style="display: none; margin-top: 15px; background: #fdfae6; padding: 15px; border-radius: 15px; border-left: 4px solid var(--success); text-align: left; font-size: 14.5px; line-height: 1.5; color: #333;">
+            </div>
+
+            <div id="fc-button-group" style="display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
+                <button id="fc-action-btn" class="btn-main" style="background: var(--success); flex: 1; min-width: 100px; margin: 0; padding: 12px 10px;">Kiểm tra</button>
+                <button id="fc-skip-btn" onclick="skipToNextFcWord(this)" class="btn-main" style="background: #f39c12; flex: 1; min-width: 100px; margin: 0; padding: 12px 10px;">⏭️ Bỏ qua</button>
+                <button id="fc-master-btn" onclick="masterFcWord(this)" class="btn-main" style="background: #9b59b6; flex: 1; min-width: 100px; margin: 0; padding: 12px 10px;">🧠 Đã thuộc</button>
+                <button id="fc-close-btn" onclick="document.getElementById('flashcard-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: var(--text-dark); flex: 1; min-width: 100px; margin: 0; padding: 12px 10px;">Dừng lại</button>
+            </div>
         </div>
     </div>
 
@@ -3217,8 +4115,6 @@
                 setTimeout(() => toast.remove(), 400); 
             }, 3000);
         };
-
-        // 6. HÀM RENDER CÂU HỎI
         // 6. HÀM RENDER CÂU HỎI (Đã tối ưu giao diện cho Mobile)
         window.renderVocabQuestion = () => {
             const area = document.getElementById('vocab-quiz-area');
