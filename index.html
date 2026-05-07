@@ -277,52 +277,88 @@
         @keyframes fadeOut {
             to { opacity: 0; visibility: hidden; }
         }
-        /* Style cho danh mục bài tập (Accordion) */
+        /* =========================================
+           GIAO DIỆN ADMIN PHÂN CẤP (BÉN & HIỆN ĐẠI)
+           ========================================= */
+
+        /* 1. Cấp cao nhất: Nhóm Part (Part 1, 2, 3, 4) */
         .admin-category-group {
-            margin-top: 15px;
-            border: 1px solid #e0d0a0;
-            border-radius: 12px;
+            margin-top: 20px;
+            border: 2px solid #2d3436; /* Viền đậm cứng cáp */
+            border-radius: 15px;
             overflow: hidden;
             background: #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
 
         .admin-category-header {
-            background: var(--light-yellow);
-            padding: 12px 20px;
-            font-weight: bold;
-            color: var(--primary);
+            background: #2d3436 !important; /* Đổi sang nền tối cho chuyên nghiệp */
+            padding: 15px 20px;
+            font-weight: 800;
+            color: var(--accent-yellow) !important; /* Chữ vàng tươi nổi bật */
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #eee;
+            transition: 0.3s;
         }
 
         .admin-category-header:hover {
-            background: #fdfae6;
+            background: #1e272e !important;
+            padding-left: 25px; /* Hiệu ứng trượt nhẹ khi hover */
         }
 
-        .admin-category-content {
-            display: none; /* Mặc định ẩn, chỉ hiện khi click */
-            padding: 10px;
-            background: #fafafa;
+        /* 2. Cấp trung gian: Nhóm Mã Đề (ETS 2024, Test 1...) */
+        .admin-sub-category-group {
+            margin: 10px 15px;
+            border: 1px solid #ffde59;
+            border-radius: 10px;
+            background: #fffdf0;
+            overflow: hidden;
         }
 
+        .admin-sub-category-header {
+            background: #fff9e6;
+            padding: 10px 15px;
+            font-weight: 700;
+            color: #d35400; /* Màu cam đậm phân biệt với cấp 1 */
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border-bottom: 1px solid #ffde59;
+        }
+
+        /* 3. Cấp cuối: Thẻ bài tập chi tiết */
         .admin-item-card {
             background: white;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 10px;
+            padding: 12px 15px;
+            margin: 8px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid #eee;
-            transition: 0.2s;
+            border-left: 4px solid var(--primary); /* Vạch màu tím điểm nhấn */
+            transition: all 0.2s ease;
         }
 
         .admin-item-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transform: translateX(5px); /* Nảy nhẹ sang phải */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* Hiệu ứng xoay icon mũi tên khi mở/đóng */
+        .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+
+        /* Class bổ trợ để JS điều khiển ẩn hiện */
+        .admin-category-content, .admin-sub-category-content {
+            display: none;
+            padding: 5px;
         }
         /* Khung chứa cho mỗi câu hỏi con trong Part 3, 4 */
         .quiz-group-item {
@@ -675,7 +711,7 @@
 </head>
 <body>
     <script>
-        const CURRENT_VERSION = "1.6.2"; // ⚠️ Đã tăng lên 1.5.6 để ép trình duyệt xóa cache
+        const CURRENT_VERSION = "1.6.3"; // ⚠️ Đã tăng lên 1.5.6 để ép trình duyệt xóa cache
         const savedVersion = localStorage.getItem("app_version");
         if (savedVersion !== CURRENT_VERSION) {
             localStorage.setItem("app_version", CURRENT_VERSION);
@@ -788,11 +824,24 @@
     <div id="pass-modal" class="modal"><div class="modal-content"><h3>Đổi Mật Khẩu</h3><input type="password" id="new-password" placeholder="Mật khẩu mới"><button id="confirm-pass-btn" class="btn-main">Cập Nhật</button><button onclick="closePass()" style="background:none; border:none; color:#999; cursor:pointer; width:100%;">Đóng</button></div></div>
     <div id="inbox-modal" class="modal">
         <div class="modal-content" style="max-width: 600px; padding: 25px;">
-            <h3 style="color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px;">
-                <i class="fa-solid fa-envelope-open-text"></i> Góp ý từ Giáo viên
+            <h3 style="color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa-solid fa-envelope-open-text"></i> Hộp Thư Tương Tác</span>
+                <button onclick="toggleComposeArea()" class="btn-main" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px; background: #0984e3;">
+                    <i class="fa-solid fa-plus"></i> Soạn câu hỏi
+                </button>
             </h3>
-            <div id="inbox-list" class="custom-scrollbar" style="max-height: 50vh; overflow-y: auto; text-align: left; margin-top: 15px;">
+
+            <div id="compose-area" style="display: none; background: #f1f2f6; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <p style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #2d3436;">Nội dung câu hỏi của bạn:</p>
+                <textarea id="student-question-input" rows="4" placeholder="Thầy cô ơi, giải thích giúp em phần này với..." style="width: 100%; border-radius: 10px; padding: 10px; border: 1px solid #ccc; font-family: inherit; margin-bottom: 10px;"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="submitGeneralQuestion()" id="send-q-btn" class="btn-main" style="flex: 1; margin: 0; background: var(--success);">Gửi câu hỏi ngay</button>
+                    <button onclick="toggleComposeArea()" class="btn-main" style="flex: 1; margin: 0; background: #e0e0e0; color: #333;">Hủy</button>
+                </div>
             </div>
+
+            <div id="inbox-list" class="custom-scrollbar" style="max-height: 50vh; overflow-y: auto; text-align: left; margin-top: 15px;">
+                </div>
             <button onclick="document.getElementById('inbox-modal').style.display='none'" class="btn-main" style="background: #e0e0e0; color: #333; margin-top: 15px;">Đóng Lại</button>
         </div>
     </div>
@@ -890,11 +939,15 @@
                 
                 <!-- CÁC NÚT CỦA ADMIN -->
                 <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'admin-lessons')">Quản Lý</button>
-                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-manage')">Phê Duyệt</button>
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px; position: relative;" onclick="showTab(event, 'user-manage')">
+                    <i class="fa-solid fa-user-check"></i> Phê Duyệt
+                    <span id="admin-user-badge" class="badge-modern" style="display:none;">0</span>
+                </button>
                 <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'user-list')">Học Viên</button>
                 
-                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px;" onclick="showTab(event, 'admin-support'); loadTeacherRequests();">
+                <button class="btn-main admin-only" style="display:none; width:auto; padding:10px 15px; position: relative;" onclick="showTab(event, 'admin-support'); loadTeacherRequests();">
                     <i class="fa-solid fa-pen-nib"></i> Chấm Bài
+                    <span id="admin-grading-badge" class="badge-modern" style="display:none;">0</span>
                 </button>
             </div>
 
@@ -991,9 +1044,11 @@
             <div id="flashcard-tab" class="tab-content" style="display:none; text-align: center;">
                 <div style="background: white; border-radius: 20px; padding: 40px 20px; border: 2px dashed var(--primary); margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
                     <div style="font-size: 65px; margin-bottom: 15px; animation: bounceIcon 2s infinite alternate;">🧠</div>
-                    <h2 style="color: var(--primary); margin-bottom: 10px;">Từ Vựng TOEIC Cốt Lõi</h2>
-                    <p style="color: #666; line-height: 1.6; max-width: 600px; margin: 0 auto 25px auto; font-size: 15px;"></p>
-                    <button class="btn-main" onclick="startToeicFlashcards()" style="background: linear-gradient(135deg, #0984e3, #6c5ce7); width: auto; padding: 16px 40px; font-size: 18px; box-shadow: 0 10px 25px rgba(9, 132, 227, 0.4); border-radius: 50px;">
+                    <h2 style="color: var(--primary); margin-bottom: 10px;">Từ Vựng Cốt Lõi</h2>
+                    <p style="color: #666; line-height: 1.6; max-width: 600px; margin: 0 auto 25px auto; font-size: 15px;">Rèn luyện phản xạ từ vựng TOEIC theo phương pháp ghi nhớ 3 bước.</p>
+                    
+                    <!-- THÊM margin: 0 auto ĐỂ CANH GIỮA -->
+                    <button class="btn-main" onclick="startToeicFlashcards()" style="background: linear-gradient(135deg, #0984e3, #6c5ce7); width: auto; padding: 16px 40px; font-size: 18px; box-shadow: 0 10px 25px rgba(9, 132, 227, 0.4); border-radius: 50px; margin: 0 auto;">
                         <i class="fa-solid fa-bolt"></i> Bắt Đầu Luyện Tập Ngay
                     </button>
                 </div>
@@ -1662,47 +1717,69 @@
                     const dataPromises = []; // Để trống, không bắt học viên tải bài học ngay lúc này
 
                     if (ADMIN_EMAILS.includes(user.email)) {
-                        // 1. CHẾ ĐỘ ADMIN
+                        // 1. CHẾ ĐỘ ADMIN - HIỂN THỊ CÔNG CỤ
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
                         
-                        // Ẩn nút Hộp Thư (vì Admin không cần nút này)
+                        // Ẩn nút Hộp Thư (vì Admin dùng tab Chấm Bài riêng)
                         const inboxBtn = document.getElementById('btn-inbox-outside');
                         if(inboxBtn) inboxBtn.style.display = 'none';
                         
                         dataPromises.push(fetchAdminData()); 
                         dataPromises.push(fetchAllForAdmin()); 
+
+                        // ==========================================================
+                        // [MỚI] BỘ CẢM BIẾN REAL-TIME DÀNH RIÊNG CHO ADMIN
+                        // ==========================================================
+
+                        // Cảm biến 1: Đếm số học viên đang chờ phê duyệt (status == 'pending')
+                        const qUserPending = query(collection(db, "users"), where("status", "==", "pending"));
+                        onSnapshot(qUserPending, (snap) => {
+                            const count = snap.size;
+                            const badge = document.getElementById('admin-user-badge');
+                            if (badge) {
+                                if (count > 0) {
+                                    badge.style.display = 'flex';
+                                    badge.innerText = count;
+                                } else {
+                                    badge.style.display = 'none'; // Tự động ẩn khi đã duyệt hết
+                                }
+                            }
+                        });
+
+                        // Cảm biến 2: Đếm số bài tập viết đang chờ chấm (status == 'pending')
+                        const qGradingPending = query(collection(db, "teacher_requests"), where("status", "==", "pending"));
+                        onSnapshot(qGradingPending, (snap) => {
+                            const count = snap.size;
+                            const badge = document.getElementById('admin-grading-badge');
+                            if (badge) {
+                                if (count > 0) {
+                                    badge.style.display = 'flex';
+                                    badge.innerText = count;
+                                } else {
+                                    badge.style.display = 'none'; // Tự động ẩn khi đã chấm xong
+                                }
+                            }
+                        });
+
                     } else {
-                        // 2. CHẾ ĐỘ HỌC VIÊN
+                        // 2. CHẾ ĐỘ HỌC VIÊN (Giữ nguyên phần cảm biến Hộp thư bạn đang có)
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-                        
-                        // Hiện nút Hộp Thư
                         const inboxBtn = document.getElementById('btn-inbox-outside');
                         if(inboxBtn) inboxBtn.style.display = 'inline-block';
 
-                        // ==========================================================
-                        // BẬT CẢM BIẾN REAL-TIME KIỂM TRA HỘP THƯ CHƯA ĐỌC
-                        // Lọc thẳng trên Javascript để tránh lỗi Index Firestore
-                        // ==========================================================
                         const qBadge = query(collection(db, "teacher_requests"), where("uid", "==", user.uid));
-                        
                         onSnapshot(qBadge, (snap) => {
                             let unreadCount = 0;
-                            // Đếm số thư đã trả lời mà chưa đọc
                             snap.forEach(doc => {
                                 const data = doc.data();
                                 if (data.status === "answered" && data.isRead === false) {
                                     unreadCount++;
                                 }
                             });
-
                             const badge = document.getElementById('inbox-badge-outside');
                             if (badge) {
-                                if (unreadCount === 0) {
-                                    badge.style.display = 'none'; // Ẩn chấm đỏ
-                                } else {
-                                    badge.style.display = 'flex'; // Hiện chấm đỏ
-                                    badge.innerText = unreadCount;
-                                }
+                                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                                badge.innerText = unreadCount;
                             }
                         });
                     }
@@ -2535,9 +2612,9 @@
         window.fetchAdminLessons = () => {
             const div = document.getElementById('admin-lesson-list');
             if(!div) return;
-            div.innerHTML = "<h4 style='margin: 20px 0 10px 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 5px;'>📚 Danh sách bài tập hệ thống</h4>";
+            div.innerHTML = "<h4 style='margin: 20px 0 10px 0; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 5px;'>📚 Quản lý theo cấu trúc Đề thi</h4>";
 
-            // 1. Nhóm bài tập vào Object theo Loại và Part/Level
+            // 1. Nhóm cấp 1: Theo Loại và Part/Level
             const categories = {};
             allLessons.forEach(d => {
                 const catName = d.type === 'quiz' ? `Trắc nghiệm - ${d.part}` : `Điền từ - ${d.level}`;
@@ -2545,43 +2622,63 @@
                 categories[catName].push(d);
             });
 
-            // 2. Thứ tự hiển thị các danh mục (Accordion)
             const priority = [
                 "Điền từ - Co_ban", "Điền từ - Trung_cap", "Điền từ - Nang_cao",
                 "Trắc nghiệm - Part1", "Trắc nghiệm - Part2", "Trắc nghiệm - Part3", "Trắc nghiệm - Part4"
             ];
 
-            // 3. Lấy danh sách các danh mục và sắp xếp theo priority
-            const sortedCatKeys = Object.keys(categories).sort((a, b) => {
-                return priority.indexOf(a) - priority.indexOf(b);
-            });
+            const sortedCatKeys = Object.keys(categories).sort((a, b) => priority.indexOf(a) - priority.indexOf(b));
 
-            // 4. Duyệt qua từng danh mục để vẽ HTML
             sortedCatKeys.forEach(catName => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'admin-category-group';
 
-                // SẮP XẾP THÔNG MINH: Nhóm đề trước, số thứ tự sau (Áp dụng cho mọi Part)
-                const sortedItems = categories[catName].sort(smartSort);
+                // Lấy danh sách bài trong Part này
+                const itemsInPart = categories[catName];
 
+                // 2. Nhóm cấp 2: Theo Mã Đề (examCode) bên trong Part
+                const subGroups = {};
+                itemsInPart.forEach(item => {
+                    const code = item.examCode || "Khác";
+                    if (!subGroups[code]) subGroups[code] = [];
+                    subGroups[code].push(item);
+                });
+
+                // Sắp xếp mã đề theo thứ tự thông minh (ETS lên đầu)
+                const sortedExamCodes = Object.keys(subGroups).sort(window.smartExamSort);
+
+                // Vẽ HTML cho Part chính
                 groupDiv.innerHTML = `
-                    <div class="admin-category-header" onclick="toggleCategory(this)">
-                        <span><i class="fa-solid fa-folder-tree"></i> ${catName.replace('_', ' ')} <small>(${sortedItems.length} bài)</small></span>
-                        <i class="fa-solid fa-chevron-down" style="transition: 0.3s;"></i>
+                    <div class="admin-category-header" onclick="toggleCategory(this)" style="background: #2d3436; color: #ffde59;">
+                        <span><i class="fa-solid fa-layer-group"></i> ${catName.replace('_', ' ')}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="admin-category-content">
-                        ${sortedItems.map(d => `
-                            <div class="admin-item-card">
-                                <div style="text-align: left;">
-                                    <div style="font-size:14px; color: var(--text-dark);"><b>${d.title}</b></div>
-                                    <div style="font-size:10px; color:#999;">ID: ${d.id.substring(0,6)}...</div>
+                        ${sortedExamCodes.map(code => {
+                            const items = subGroups[code].sort(window.smartSort);
+                            return `
+                                <div class="admin-sub-category-group">
+                                    <div class="admin-sub-category-header" onclick="toggleCategory(this)">
+                                        <span><i class="fa-solid fa-file-lines"></i> Đề: ${code} <small>(${items.length} bài)</small></span>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </div>
+                                    <div class="admin-sub-category-content">
+                                        ${items.map(d => `
+                                            <div class="admin-item-card" style="border-left: 3px solid var(--primary); margin-left: 5px;">
+                                                <div style="text-align: left;">
+                                                    <div style="font-size:13.5px;"><b>${d.title}</b></div>
+                                                    <div style="font-size:10px; color:#aaa;">ID: ${d.id.substring(0,8)}</div>
+                                                </div>
+                                                <div style="display: flex; gap: 5px;">
+                                                    <button class="admin-list-btn" onclick="editLessonById('${d.id}')" style="background:var(--primary); font-size:11px;">Sửa</button>
+                                                    <button class="admin-list-btn" onclick="deleteLesson('${d.id}')" style="background:var(--danger); font-size:11px;">Xóa</button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
                                 </div>
-                                <div style="display: flex; gap: 5px;">
-                                    <button class="admin-list-btn" onclick="editLessonById('${d.id}')" style="background:var(--primary); color:white; padding: 4px 10px;">Sửa</button>
-                                    <button class="admin-list-btn" onclick="deleteLesson('${d.id}')" style="background:var(--danger); color:white; padding: 4px 10px;">Xóa</button>
-                                </div>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 `;
                 div.appendChild(groupDiv);
@@ -3862,7 +3959,7 @@
                 const snap = await getDocs(q);
 
                 if (snap.empty) {
-                    list.innerHTML = "<p style='text-align: center; color: #999;'>Hộp thư trống. AI đang xử lý rất tốt bài của bạn!</p>";
+                    list.innerHTML = "<p style='text-align: center; color: #999;'>Hộp thư trống.Để hỏi giáo viên, vui lòng kích chọn Soạn câu hỏi!</p>";
                     return;
                 }
 
@@ -3928,6 +4025,51 @@
             } catch (e) {
                 list.innerHTML = "❌ Lỗi không tải được thư!";
                 console.error(e);
+            }
+        };
+        // --- 1. Ẩn/Hiện khung soạn thảo ---
+        window.toggleComposeArea = () => {
+            const area = document.getElementById('compose-area');
+            area.style.display = area.style.display === 'none' ? 'block' : 'none';
+            if(area.style.display === 'block') document.getElementById('student-question-input').focus();
+        };
+
+        // --- 2. Gửi câu hỏi về Admin ---
+        window.submitGeneralQuestion = async () => {
+            const questionText = document.getElementById('student-question-input').value.trim();
+            const btn = document.getElementById('send-q-btn');
+
+            if (!questionText) return showBeautifulToast("Vui lòng nhập nội dung câu hỏi!", "warning");
+
+            try {
+                btn.innerText = "⏳ Đang gửi...";
+                btn.disabled = true;
+
+                await addDoc(collection(db, "teacher_requests"), {
+                    uid: auth.currentUser.uid,
+                    studentName: document.getElementById('menu-email-display').innerText || auth.currentUser.email,
+                    word: "Hỏi đáp tự do", // Nhãn để Admin phân biệt với bài chấm
+                    sentence: questionText,
+                    status: "pending",
+                    teacherReply: "",
+                    isRead: false,
+                    createdAt: serverTimestamp()
+                });
+
+                showBeautifulToast("Đã gửi câu hỏi! Thầy cô sẽ sớm trả lời bạn.", "success");
+                
+                // Reset và đóng khung soạn thảo
+                document.getElementById('student-question-input').value = "";
+                window.toggleComposeArea();
+                
+                // Tải lại hộp thư để hiện tin nhắn đang chờ
+                window.showInboxModal();
+
+            } catch (e) {
+                showBeautifulToast("Lỗi gửi câu hỏi: " + e.message, "danger");
+            } finally {
+                btn.innerText = "Gửi câu hỏi ngay";
+                btn.disabled = false;
             }
         };
 
